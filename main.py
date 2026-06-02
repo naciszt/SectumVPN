@@ -44,7 +44,7 @@ async def start(message: Message):
         tgk
       ):
         kb = InlineKeyboardBuilder()
-        kb.button(text="🏴‍☠️ Подписаться", url="t.me/xblogwin")
+        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
         
         await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
@@ -63,7 +63,7 @@ async def handler(message: Message):
         tgk
       ):
         kb = InlineKeyboardBuilder()
-        kb.button(text="🏴‍☠️ Подписаться", url="t.me/xblogwin")
+        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
         
         await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
@@ -124,7 +124,7 @@ async def checksub(callback: CallbackQuery):
         tgk
       ):
         kb = InlineKeyboardBuilder()
-        kb.button(text="🏴‍☠️ Подписаться", url="t.me/+ccvOpqglLwplYjli")
+        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
 
         await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наш телеграм канал:)\n\n@kildoxer", reply_markup=kb.as_markup())
