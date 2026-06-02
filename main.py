@@ -71,7 +71,7 @@ async def handler(message: Message):
 
         await message.answer_photo(
             photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
-            caption="🔥 Для использования бота подпишитесь на канал",
+            caption="🔥 Подпишись на канал для использования бота",
             reply_markup=kb.as_markup()
         )
         return
@@ -87,7 +87,6 @@ async def handler(message: Message):
         await message.answer("❌ Ничего не найдено")
         return
 
-    # ---------- FAST INFO ----------
     search = data.get("search", "—")
     detected = data.get("detected_type", "unknown")
     results_count = data.get("results_count", 0)
@@ -104,44 +103,33 @@ async def handler(message: Message):
     if isinstance(fast.get("region"), list) and fast["region"]:
         region = fast["region"][0][1]
 
-    # ---------- BASE INFO ----------
-    full = data.get("full-result", {})
-    base = full.get("Базовая информация", {})
-    if not isinstance(base, dict):
-        base = {}
-
-    status = base.get("amshel_status", "—")
-
-    # ---------- TEXT HEADER ----------
     text = (
         f"📊 <b>Результат поиска</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
         f"🌍 <b>Страна:</b> {country}\n"
-        f"🗺 <b>Регион:</b> {region}\n"
-        f"📊 <b>Статус:</b> {status}\n\n"
+        f"🗺 <b>Регион:</b> {region}\n\n"
         f"📦 <b>Результатов:</b> {results_count}\n"
         f"📚 <b>Источников:</b> {sources_count}\n"
         f"⏱ <b>Время:</b> {time}s\n"
     )
 
-    # ---------- DATABASE RESULTS ----------
+    full = data.get("full-result", {})
     dbs = full.get("Базы Данных", [])
+
     if not isinstance(dbs, list):
         dbs = []
 
     seen = set()
     count = 0
 
-    text += "\n📁 <b>Результаты из баз:</b>\n"
+    text += "\n📁 <b>Результаты:</b>\n"
 
     for db in dbs:
         if not isinstance(db, dict):
             continue
 
-        source = db.get("source", "unknown")
         info = db.get("info_leak", "")
-
         clean = clean_text(info)
 
         if not clean:
@@ -154,12 +142,12 @@ async def handler(message: Message):
         seen.add(clean)
         count += 1
 
-        text += f"\n<b>{count}. {source}</b>\n{clean}\n"
+        text += f"\n{clean}\n"
 
         if count >= 10:
             break
 
-    # ---------- SAFE SEND (anti Telegram limit) ----------
+    # защита от лимита Telegram
     def split_text(txt, limit=3500):
         parts = []
         while len(txt) > limit:
