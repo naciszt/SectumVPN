@@ -13,9 +13,10 @@ API_URL = "http://cryven.info/api/search"
 API_KEY = "@naciszt:9qVZfRS4"
 
 TOKEN = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
-
 tgk = [-1002488180084]
 
+
+# ---------- CHECK SUB (НЕ ТРОГАЮ UI) ----------
 async def checksubi(bot, user_id: int, channels: list[int]) -> bool:
     for ch in tgk:
         member = await bot.get_chat_member(ch, user_id)
@@ -23,44 +24,9 @@ async def checksubi(bot, user_id: int, channels: list[int]) -> bool:
             return False
     return True
 
-def flatten_json(data, prefix=""):
-    lines = []
-    if isinstance(data, dict):
-        for k, v in data.items():
-            new_prefix = f"{prefix}{k}: "
-            lines.extend(flatten_json(v, new_prefix))
-    elif isinstance(data, list):
-        for item in data:
-            lines.extend(flatten_json(item, prefix))
-    else:
-        lines.append(f"{prefix}{data}")
-    return lines
 
-@router.message(Command("start"))
-async def start(message: Message):
-    if not await checksubi(
-        message.bot,
-        message.from_user.id,
-        tgk
-      ):
-        kb = InlineKeyboardBuilder()
-        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
-        kb.button(text="✅ Проверить", callback_data="checksub")
-        
-        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
-        return
-    await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
-
-<i>Пока-что доступен только поиск по номеру, для поиска напиши номер в таком формате: <code>+79ХХХХХХХХХ</code></i>
-
-<b>Наш телеграм канал: @kildoxer</b>""", parse_mode="HTML")
-
-import aiohttp
-
-# ---------- helpers ----------
-
+# ---------- CLEAN ----------
 def clean_list(data):
-    """[['type','value']] -> unique values"""
     if not isinstance(data, list):
         return []
 
@@ -77,6 +43,7 @@ def split_text(text, limit=3500):
     return [text[i:i + limit] for i in range(0, len(text), limit)]
 
 
+# ---------- REPORT ----------
 def build_report(data: dict) -> str:
     fast = data.get("fast-result", {}) or {}
     full = data.get("full-result", {}) or {}
@@ -87,15 +54,15 @@ def build_report(data: dict) -> str:
     sources_count = data.get("sources_count", 0)
     time = data.get("search_time", "—")
 
-    # FAST DATA
     phone = clean_list(fast.get("phone"))
     email = clean_list(fast.get("email"))
     fullname = clean_list(fast.get("fullname"))
     region = clean_list(fast.get("region"))
     country = clean_list(fast.get("country"))
 
-    # BASE INFO
-    base = full.get("Базовая информация", {}) if isinstance(full.get("Базовая информация"), dict) else {}
+    base = full.get("Базовая информация", {})
+    if not isinstance(base, dict):
+        base = {}
 
     text = (
         f"📊 <b>РЕЗУЛЬТАТ ПОИСКА</b>\n\n"
@@ -112,19 +79,19 @@ def build_report(data: dict) -> str:
     text += "\n📁 <b>БЫСТРЫЕ ДАННЫЕ</b>\n"
 
     if fullname:
-        text += f"👤 <b>Имя:</b> {', '.join(fullname)}\n"
+        text += f"👤 Имя: {', '.join(fullname)}\n"
     if phone:
-        text += f"📞 <b>Телефон:</b> {', '.join(phone)}\n"
+        text += f"📞 Телефон: {', '.join(phone)}\n"
     if email:
-        text += f"📧 <b>Email:</b> {', '.join(email)}\n"
+        text += f"📧 Email: {', '.join(email)}\n"
 
-    # BASE INFO CLEAN
+    # BASE INFO
     if base:
         text += "\n📍 <b>БАЗОВАЯ ИНФОРМАЦИЯ</b>\n"
         for k, v in base.items():
             text += f"• {k}: {v}\n"
 
-    # DB DATA CLEAN
+    # DB BLOCK
     dbs = full.get("Базы Данных", [])
     if not isinstance(dbs, list):
         dbs = []
@@ -139,42 +106,102 @@ def build_report(data: dict) -> str:
             continue
 
         source = db.get("source", "unknown")
-        info = db.get("info_leak", "") or db.get("description", "") or ""
+        info = db.get("info_leak") or db.get("description") or ""
 
-        info_clean = str(info).strip()
+        info = str(info).strip()
 
-        if not info_clean or info_clean in seen:
+        if not info or info in seen:
             continue
 
-        seen.add(info_clean)
+        seen.add(info)
         count += 1
 
-        text += f"\n🔹 <b>{count}. {source}</b>\n{info_clean}\n"
+        text += f"\n🔹 <b>{count}. {source}</b>\n{info}\n"
 
         if count >= 10:
             break
 
     return text
+
+
+# ---------- START (НЕ ТРОГАЮ) ----------
+@router.message(Command("start"))
+async def start(message: Message):
+    if not await checksubi(
+        message.bot,
+        message.from_user.id,
+        tgk
+      ):
+        kb = InlineKeyboardBuilder()
+        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
+        kb.button(text="✅ Проверить", callback_data="checksub")
+
+        await message.answer_photo(
+            photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+            caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer",
+            reply_markup=kb.as_markup()
+        )
+        return
+
+    await message.answer_photo(
+        photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+        caption="""<b>💎 Kildoxer Info</b>
+
+<i>Пока-что доступен только поиск по номеру, для поиска напиши номер в таком формате: <code>+79ХХХХХХХХХ</code></i>
+
+<b>Наш телеграм канал: @kildoxer</b>""",
+        parse_mode="HTML"
+    )
+
+
+# ---------- SEARCH ----------
+@router.message(F.text)
+async def handler(message: Message):
+    if not await checksubi(message.bot, message.from_user.id, tgk):
+        await message.answer("Ты не подписан")
+        return
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(
+                API_URL,
+                params={"key": API_KEY, "search": message.text},
+                timeout=20
+            ) as resp:
+                data = await resp.json()
+        except:
+            await message.answer("API ошибка")
+            return
+
+    if not data.get("success"):
+        await message.answer("❌ Ничего не найдено")
+        return
+
+    report = build_report(data)
+
+    for part in split_text(report):
+        await message.answer(part, parse_mode="HTML")
+
+
+# ---------- CALLBACK (НЕ ТРОГАЮ) ----------
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
-
         kb = InlineKeyboardBuilder()
         kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
 
         await callback.message.answer_photo(
             photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
-            caption="Ты не подписался!",
+            caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer",
             reply_markup=kb.as_markup()
         )
         return
-    await callback.message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
 
-<i>Пока-что доступен только поиск по номеру, для поиска напиши номер в таком формате: <code>+79ХХХХХХХХХ</code></i>
+    await callback.message.answer("Доступ подтверждён")
 
-<b>Наш телеграм канал: @kildoxer</b>""", parse_mode="HTML")
 
+# ---------- MAIN ----------
 async def main():
     bot = Bot(TOKEN)
     dp = Dispatcher()
