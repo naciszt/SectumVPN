@@ -1,6 +1,5 @@
 import asyncio
 import requests
-import asyncio
 import re
 
 from aiogram import Bot, Dispatcher, Router, F
