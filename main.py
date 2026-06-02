@@ -115,7 +115,7 @@ async def handler(message: Message):
     )
 
     full = data.get("full-result", {})
-    dbs = full.get("Базы Данных", [])
+    dbs = full.get("Базовая информация", [])
 
     if not isinstance(dbs, list):
         dbs = []
