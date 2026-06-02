@@ -55,6 +55,13 @@ async def start(message: Message):
 
 <b>Наш телеграм канал: @kildoxer</b>""", parse_mode="HTML")
 
+def clean_text(text: str) -> str:
+    return (
+        text.replace("<em>", "")
+            .replace("</em>", "")
+            .strip()
+    )
+    
 @router.message(F.text)
 async def handler(message: Message):
     if not await checksubi(
@@ -118,18 +125,19 @@ async def handler(message: Message):
 
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
-    if not await checksubi(
-        callback.bot,
-        callback.from_user.id,
-        tgk
-      ):
+    if not await checksubi(callback.bot, callback.from_user.id, tgk):
+
         kb = InlineKeyboardBuilder()
         kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
 
-        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наш телеграм канал:)\n\n@kildoxer", reply_markup=kb.as_markup())
+        await callback.message.answer_photo(
+            photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+            caption="Ты не подписался!",
+            reply_markup=kb.as_markup()
+        )
         return
-    await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
+     await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
 
 <i>Пока-что доступен только поиск по номеру, для поиска напиши номер в таком формате: <code>+79ХХХХХХХХХ</code></i>
 
