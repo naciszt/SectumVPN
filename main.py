@@ -876,8 +876,8 @@ def make_router(is_mirror: bool = False) -> Router:
             parse_mode="HTML"
         )
 
-           except ValueError:
-               await message.answer("❌ Неверный ID")
+                except ValueError:
+                    await message.answer("❌ Неверный ID")
 
            elif state == "unban":
                try:
