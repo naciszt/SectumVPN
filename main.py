@@ -47,7 +47,7 @@ async def start(message: Message):
         kb.button(text="🏴‍☠️ Подписаться", url="t.me/xblogwin")
         kb.button(text="✅ Проверить", callback_data="checksub")
         
-        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kbb.as_markup())
+        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
         return
     await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
 
@@ -57,32 +57,40 @@ async def start(message: Message):
 
 @router.message(F.text)
 async def handler(message: Message):
+    if not await checksubi(
+        message.bot,
+        message.from_user.id,
+        tgk
+      ):
+        kb = InlineKeyboardBuilder()
+        kb.button(text="🏴‍☠️ Подписаться", url="t.me/xblogwin")
+        kb.button(text="✅ Проверить", callback_data="checksub")
+        
+        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
+        return
     async with aiohttp.ClientSession() as session:
         async with session.get(
             API_URL,
-            params={"key": API_KEY, "search": message.text}
+            params={
+                "key": API_KEY,
+                "search": message.text
+            }
         ) as resp:
             data = await resp.json()
-
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
         return
-
     search = data.get("search", "—")
     detected = data.get("detected_type", "unknown")
     results_count = data.get("results_count", 0)
     sources_count = data.get("sources_count", 0)
     time = data.get("search_time", "—")
-
     fast = data.get("fast-result", {})
     full = data.get("full-result", {})
-
     country = "—"
     region = "—"
-
     if isinstance(fast.get("country"), list) and fast["country"]:
         country = fast["country"][0][1]
-
     if isinstance(fast.get("region"), list) and fast["region"]:
         region = fast["region"][0][1]
 
@@ -96,15 +104,16 @@ async def handler(message: Message):
         f"📚 <b>Источников:</b> {sources_count}\n"
         f"⏱ <b>Время:</b> {time}s\n"
     )
-
-    # если есть базы данных
     dbs = full.get("Базы Данных", [])
     if dbs:
-        text += "\n📁 <b>Базы:</b>\n"
-        for i, db in enumerate(dbs[:5], 1):
+        text += "\n📁 <b>Результаты из баз:</b>\n"
+        for i, db in enumerate(dbs, 1):
             source = db.get("source", "unknown")
-            text += f"{i}. {source}\n"
-
+            info = db.get("info_leak", "")
+            clean = clean_text(info)
+            text += f"\n<b>{i}. {source}</b>\n"
+            if clean:
+                text += f"{clean}\n"
     await message.answer(text, parse_mode="HTML")
 
 @router.callback_query(F.data == "checksub")
@@ -118,7 +127,7 @@ async def checksub(callback: CallbackQuery):
         kb.button(text="🏴‍☠️ Подписаться", url="t.me/+ccvOpqglLwplYjli")
         kb.button(text="✅ Проверить", callback_data="checksub")
 
-        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наш телеграм канал:)\n\n@kildoxer", reply_markup=kbb.as_markup())
+        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наш телеграм канал:)\n\n@kildoxer", reply_markup=kb.as_markup())
         return
     await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="""<b>💎 Kildoxer Info</b>
 
