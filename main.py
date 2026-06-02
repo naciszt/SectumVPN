@@ -5,6 +5,8 @@ import aiohttp
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 router = Router()
 
 API_URL = "http://cryven.info/api/search"
