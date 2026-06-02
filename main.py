@@ -955,7 +955,7 @@ async def launch_mirror(token: str, label: str):
 
     task = asyncio.create_task(run())
     mirror_tasks[token] = task
-main_router = Router()  # должно быть так
+routernash = Router()  # должно быть так
 async def main():
     global _main_bot_ref
 
@@ -967,7 +967,7 @@ async def main():
 
     main_dp = Dispatcher()
     main_router = make_router(is_mirror=False)
-    main_dp.include_router(main_router)
+    main_dp.include_router(routernash)
 
     await init_db()
 
