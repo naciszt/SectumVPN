@@ -188,7 +188,7 @@ async def handler(message: Message):
 
     await message.answer_document(file, caption="📄 Полный отчёт (HTML)")
 
-    @router.callback_query(F.data == "checksub")
+@router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
 
