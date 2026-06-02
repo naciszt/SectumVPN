@@ -65,10 +65,10 @@ async def init_db():
 async def start_all_mirrors():
     mirrors = await get_mirrors()
     for token, label, status, _ in mirrors:
-        await launch_mirror(token, label)
+        try:
+            await launch_mirror(token, label)
         except Exception as e:
             print(f"[mirror error] {token}: {e}")
-
 # ═══════════════════════════════════════
 # USERS
 # ═══════════════════════════════════════
