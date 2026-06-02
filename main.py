@@ -126,7 +126,7 @@ async def handler(message: Message):
         f"📚 <b>Источников:</b> {sources_count}\n"
         f"⏱ <b>Время:</b> {time}s\n"
     )
-    dbs = full.get("Базы Данных", [])
+    dbs = full.get("Базовая информация", [])
 
     seen = set()
 
