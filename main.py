@@ -15,6 +15,10 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import FSInputFile
+import datetime
+import aiosqlite
+
+DB_PATH = "mirrors.db"
 
 banner = FSInputFile("banner.jpeg")
 # ═══════════════════════════════════════════════
@@ -25,25 +29,60 @@ API_URL      = "http://cryven.info/api/search"
 API_KEY      = "@naciszt:9qVZfRS4"
 SUB_CHANNELS = [-1002488180084]          # каналы для проверки подписки
 ADMIN_IDS    = {8317444646, 1768487973}
-DATA_FILE    = "bot_data.json"           # файл хранения данных
 
 # ═══════════════════════════════════════════════
 #  ХРАНИЛИЩЕ (JSON-файл, чтобы пережить рестарт)
 # ═══════════════════════════════════════════════
-def load_data() -> dict:
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"mirrors": [], "banned": [], "limits": {}, "users": {}}
 
-def save_data(d: dict):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
+async def init_db():
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            requests INTEGER DEFAULT 0,
+            first_seen TEXT,
+            last_request TEXT,
+            last_query TEXT
+        );
 
-DB = load_data()
+        CREATE TABLE IF NOT EXISTS mirrors (
+            token TEXT PRIMARY KEY,
+            label TEXT,
+            status TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS banned (
+            user_id INTEGER PRIMARY KEY
+        );
+
+        CREATE TABLE IF NOT EXISTS limits (
+            user_id INTEGER PRIMARY KEY,
+            limit INTEGER
+        );
+        """)
+        await db.commit()
+
+async def add_mirror_db(token: str, label: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO mirrors(token, label, status) VALUES (?, ?, ?)",
+            (token, label, "stopped")
+        )
+        await db.commit()
+async def get_mirrors():
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT token, label, status FROM mirrors") as cur:
+            return await cur.fetchall()
+async def set_mirror_status(token: str, status: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            UPDATE mirrors
+            SET status = ?, last_start = ?
+            WHERE token = ?
+        """, (status, datetime.datetime.now().isoformat(), token))
+        await db.commit()
+
+
 # mirrors  — список {"token": "...", "label": "..."}
 # banned   — список user_id (int)
 # limits   — {str(uid): int}  0 = заблокированы запросы
@@ -173,6 +212,102 @@ def to_str_list(value) -> list:
 # ═══════════════════════════════════════════════
 #  HTML ОТЧЁТ
 # ═══════════════════════════════════════════════
+def text_report(data: dict, query: str, search_type: str) -> str:
+    fast = data.get("fast-result") or {}
+    full = data.get("full-result") or {}
+
+    detected = data.get("detected_type", search_type) or search_type
+    results_count = data.get("results_count", 0)
+    sources_count = data.get("sources_count", 0)
+    search_time = data.get("search_time", "—")
+
+    phone    = to_str_list(fast.get("phone"))
+    email    = to_str_list(fast.get("email"))
+    fullname = to_str_list(fast.get("fullname") or fast.get("name") or fast.get("fio"))
+    region   = to_str_list(fast.get("region"))
+    country  = to_str_list(fast.get("country"))
+
+    base_info = full.get("Базовая информация") or {}
+    dbs = full.get("Базы Данных") or []
+
+    lines = []
+
+    # HEADER
+    lines.append("╔══════════════════════╗")
+    lines.append("      🔍 KILD0XER REPORT")
+    lines.append("╚══════════════════════╝\n")
+
+    lines.append(f"📌 Запрос: {query}")
+    lines.append(f"🧠 Тип: {detected}")
+    lines.append(f"📊 Результатов: {results_count}")
+    lines.append(f"📚 Источников: {sources_count}")
+    lines.append(f"⏱ Время: {search_time}\n")
+
+    # FAST DATA
+    lines.append("⚡ БЫСТРЫЕ ДАННЫЕ")
+    lines.append("────────────────────")
+
+    def add_block(label, value):
+        if value:
+            lines.append(f"{label}: {', '.join(value)}")
+
+    add_block("👤 ФИО", fullname)
+    add_block("📞 Телефон", phone)
+    add_block("📧 Email", email)
+    add_block("🗺 Регион", region)
+    add_block("🌍 Страна", country)
+
+    for k, v in fast.items():
+        if k in ["phone", "email", "fullname", "name", "fio", "region", "country"]:
+            continue
+        cleaned = clean_value(v)
+        if cleaned:
+            lines.append(f"{k}: {cleaned}")
+
+    # BASE INFO
+    lines.append("\n📍 БАЗОВАЯ ИНФОРМАЦИЯ")
+    lines.append("────────────────────")
+    if base_info:
+        for k, v in base_info.items():
+            cleaned = clean_value(v)
+            if cleaned:
+                lines.append(f"{k}: {cleaned}")
+    else:
+        lines.append("Нет данных")
+
+    # DATABASE LEAKS
+    lines.append("\n📦 БАЗЫ ДАННЫХ")
+    lines.append("────────────────────")
+
+    if dbs:
+        for idx, db in enumerate(dbs, 1):
+            if not isinstance(db, dict):
+                continue
+
+            source = clean_value(
+                db.get("source") or db.get("database") or db.get("name") or f"Источник {idx}"
+            )
+
+            lines.append(f"\n🔹 {idx}. {source}")
+
+            has_data = False
+            for k, v in db.items():
+                if k in ("source", "database", "db"):
+                    continue
+                cleaned = clean_value(v)
+                if cleaned:
+                    lines.append(f"   • {k}: {cleaned}")
+                    has_data = True
+
+            if not has_data:
+                lines.append("   (пусто)")
+    else:
+        lines.append("Нет записей")
+
+    lines.append("\n────────────────────")
+    lines.append("🤖 KilD0xer OSINT Engine")
+
+    return "\n".join(lines)
 def build_html_report(data: dict, query: str, search_type: str) -> str:
     fast = data.get("fast-result") or {}
     if not isinstance(fast, dict): fast = {}
@@ -543,6 +678,8 @@ def make_router(is_mirror: bool = False) -> Router:
         html_bytes = build_html_report(data, query, search_type).encode("utf-8")
         doc = BufferedInputFile(html_bytes, filename=f"report_{query[:20].replace(' ', '_')}.html")
         await wait.delete()
+        report = text_report(data, query, search_type)
+        await message.answer(report)
         await message.answer_document(
             document=doc,
             caption=(
@@ -745,26 +882,24 @@ async def launch_mirror(token: str, label: str):
 async def main():
     global _main_bot_ref
 
-    # Основной бот
     main_bot = Bot(
-    MAIN_TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-)
+        MAIN_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     _main_bot_ref = main_bot
 
     main_dp = Dispatcher()
-    # Сначала регистрируем роутер с admin_state_handler (он должен быть первым для текстов)
     main_router = make_router(is_mirror=False)
     main_dp.include_router(main_router)
 
-    # Запускаем сохранённые зеркала
-    for m in DB["mirrors"]:
-        asyncio.create_task(launch_mirror(m["token"], m["label"]))
-        await asyncio.sleep(0.3)
+    await init_db()
 
-    print(f"[MAIN] Основной бот запущен. Зеркал: {len(DB['mirrors'])}")
+    await start_all_mirrors()
+
+    asyncio.create_task(monitor_mirrors())
+
+    print(f"[🔍] Бот запущен")
     await main_dp.start_polling(main_bot)
-
-
+    
 if __name__ == "__main__":
     asyncio.run(main())
