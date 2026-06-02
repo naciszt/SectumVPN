@@ -16,7 +16,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import FSInputFile
 
-banner = FSInputFile("banner.jpg")
+banner = FSInputFile("banner.jpeg")
 # ═══════════════════════════════════════════════
 #  КОНФИГ
 # ═══════════════════════════════════════════════
