@@ -12,6 +12,8 @@ from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 # ═══════════════════════════════════════════════
 #  КОНФИГ
@@ -716,7 +718,10 @@ async def launch_mirror(token: str, label: str):
         return  # уже работает
 
     async def run():
-        bot = Bot(token, parse_mode="HTML")
+        bot = Bot(
+            token,
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        )
         mirror_bots[token] = bot
         dp  = Dispatcher()
         dp.include_router(make_router(is_mirror=True))
@@ -739,7 +744,10 @@ async def main():
     global _main_bot_ref
 
     # Основной бот
-    main_bot = Bot(MAIN_TOKEN, parse_mode="HTML")
+    main_bot = Bot(
+    MAIN_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
     _main_bot_ref = main_bot
 
     main_dp = Dispatcher()
