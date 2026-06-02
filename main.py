@@ -967,7 +967,7 @@ async def main():
 
     main_dp = Dispatcher()
     main_router = make_router(is_mirror=False)
-    main_dp.include_router(routernash)
+    main_dp.include_router(main_router)
 
     await init_db()
 
