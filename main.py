@@ -12,8 +12,10 @@ API_KEY = "@naciszt:9qVZfRS4"
 
 TOKEN = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
 
-async def checksub(bot, user_id: int, channels: list[str]) -> bool:
-    for ch in [-1002488180084]:
+tgk = [-1002488180084]
+
+async def checksubi(bot, user_id: int, channels: list[int]) -> bool:
+    for ch in tgk:
         member = await bot.get_chat_member(ch, user_id)
         if member.status in ["left", "kicked"]:
             return False
@@ -34,11 +36,10 @@ def flatten_json(data, prefix=""):
 
 @router.message(Command("start"))
 async def start(message: Message):
-    if not await is_subscribed(
+    if not await checksubi(
         message.bot,
         message.from_user.id,
-        [-1002488180084]
-        [
+        tgk
       ):
         kb = InlineKeyboardBuilder()
         kb.button(text="🏴‍☠️ Подписаться", url="t.me/xblogwin")
@@ -75,11 +76,10 @@ async def handler(message: Message):
 
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
-    if not await is_subscribed(
+    if not await checksubi(
         message.bot,
         message.from_user.id,
-        [-1002488180084]
-        [
+        tgk
       ):
         kb = InlineKeyboardBuilder()
         kb.button(text="🏴‍☠️ Подписаться", url="t.me/+ccvOpqglLwplYjli")
