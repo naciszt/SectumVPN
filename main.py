@@ -955,7 +955,7 @@ async def launch_mirror(token: str, label: str):
 
     task = asyncio.create_task(run())
     mirror_tasks[token] = task
-
+main_router = Router()  # должно быть так
 async def main():
     global _main_bot_ref
 
