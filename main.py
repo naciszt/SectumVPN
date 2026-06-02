@@ -18,22 +18,21 @@ from aiogram.types import FSInputFile
 import datetime
 import aiosqlite
 
-DB_PATH = "mirrors.db"
-
 banner = FSInputFile("banner.jpeg")
-# ═══════════════════════════════════════════════
-#  КОНФИГ
-# ═══════════════════════════════════════════════
 MAIN_TOKEN   = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
 API_URL      = "http://cryven.info/api/search"
 API_KEY      = "@naciszt:9qVZfRS4"
 SUB_CHANNELS = [-1002488180084]          # каналы для проверки подписки
 ADMIN_IDS    = {8317444646, 1768487973}
+import aiosqlite
+from datetime import datetime
 
-# ═══════════════════════════════════════════════
-#  ХРАНИЛИЩЕ (JSON-файл, чтобы пережить рестарт)
-# ═══════════════════════════════════════════════
+DB_PATH = "mirrors.db"
 
+
+# ═══════════════════════════════════════
+# INIT DB
+# ═══════════════════════════════════════
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript("""
@@ -45,13 +44,6 @@ async def init_db():
             last_query TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS mirrors (
-            token TEXT PRIMARY KEY,
-            label TEXT,
-            status TEXT,
-            last_start TEXT
-        );
-
         CREATE TABLE IF NOT EXISTS banned (
             user_id INTEGER PRIMARY KEY
         );
@@ -60,28 +52,80 @@ async def init_db():
             user_id INTEGER PRIMARY KEY,
             user_limit INTEGER DEFAULT NULL
         );
-        """)
 
+        CREATE TABLE IF NOT EXISTS mirrors (
+            token TEXT PRIMARY KEY,
+            label TEXT,
+            status TEXT DEFAULT 'stopped',
+            last_start TEXT
+        );
+        """)
         await db.commit()
+
+
+# ═══════════════════════════════════════
+# USERS
+# ═══════════════════════════════════════
+async def get_or_create_user(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT OR IGNORE INTO users (id, first_seen)
+            VALUES (?, datetime('now'))
+        """, (uid,))
+        await db.commit()
+
+
+async def update_user_stat(uid: int, query: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            UPDATE users
+            SET requests = requests + 1,
+                last_request = datetime('now'),
+                last_query = ?
+            WHERE id = ?
+        """, (query, uid))
+        await db.commit()
+
 
 async def get_user(uid: int):
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute("SELECT * FROM users WHERE id=?", (uid,))
         return await cur.fetchone()
 
-async def create_user(uid: int):
+
+# ═══════════════════════════════════════
+# BAN SYSTEM
+# ═══════════════════════════════════════
+async def is_banned(uid: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute(
+            "SELECT 1 FROM banned WHERE user_id=?",
+            (uid,)
+        )
+        return await cur.fetchone() is not None
+
+
+async def ban_user(uid: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "INSERT OR IGNORE INTO users (id, first_seen) VALUES (?, datetime('now'))",
+            "INSERT OR IGNORE INTO banned (user_id) VALUES (?)",
             (uid,)
         )
         await db.commit()
 
-async def is_banned(uid: int) -> bool:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute("SELECT 1 FROM banned WHERE user_id=?", (uid,))
-        return await cur.fetchone() is not None
 
+async def unban_user(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "DELETE FROM banned WHERE user_id=?",
+            (uid,)
+        )
+        await db.commit()
+
+
+# ═══════════════════════════════════════
+# LIMITS
+# ═══════════════════════════════════════
 async def get_limit(uid: int):
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute(
@@ -90,50 +134,86 @@ async def get_limit(uid: int):
         )
         row = await cur.fetchone()
         return row[0] if row else None
-        
+
+
 async def use_request(uid: int) -> bool:
-    lim = await get_limit(uid)
+    limit = await get_limit(uid)
 
-    if lim is None:
+    if limit is None:
         return True
-
-    if lim <= 0:
+    if limit <= 0:
         return False
 
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            """
+        await db.execute("""
             INSERT INTO limits(user_id, user_limit)
             VALUES(?, ?)
             ON CONFLICT(user_id)
             DO UPDATE SET user_limit = user_limit - 1
-            """,
-            (uid, lim)
-        )
+        """, (uid, limit))
         await db.commit()
 
     return True
 
-async def add_mirror_db(token: str, label: str):
+
+async def set_limit(uid: int, count: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO limits(user_id, user_limit)
+            VALUES(?, ?)
+            ON CONFLICT(user_id)
+            DO UPDATE SET user_limit = ?
+        """, (uid, count, count))
+        await db.commit()
+
+
+async def remove_limit(uid: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "INSERT OR REPLACE INTO mirrors(token, label, status) VALUES (?, ?, ?)",
-            (token, label, "stopped")
+            "DELETE FROM limits WHERE user_id=?",
+            (uid,)
         )
         await db.commit()
+
+
+# ═══════════════════════════════════════
+# MIRRORS
+# ═══════════════════════════════════════
+async def add_mirror(token: str, label: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT OR REPLACE INTO mirrors(token, label, status, last_start)
+            VALUES (?, ?, 'stopped', datetime('now'))
+        """, (token, label))
+        await db.commit()
+
+
 async def get_mirrors():
     async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT token, label, status FROM mirrors") as cur:
-            return await cur.fetchall()
+        cur = await db.execute(
+            "SELECT token, label, status, last_start FROM mirrors"
+        )
+        return await cur.fetchall()
+
+
 async def set_mirror_status(token: str, status: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             UPDATE mirrors
-            SET status = ?, last_start = ?
-            WHERE token = ?
-        """, (status, datetime.datetime.now().isoformat(), token))
+            SET status=?, last_start=datetime('now')
+            WHERE token=?
+        """, (status, token))
         await db.commit()
 
+
+# ═══════════════════════════════════════
+# HELPERS
+# ═══════════════════════════════════════
+async def get_all_user_ids():
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("SELECT id FROM users")
+        rows = await cur.fetchall()
+        return [r[0] for r in rows]
 
 # mirrors  — список {"token": "...", "label": "..."}
 # banned   — список user_id (int)
@@ -820,7 +900,7 @@ def make_router(is_mirror: bool = False) -> Router:
                 return
             text = "🪞 <b>Активные зеркала:</b>\n\n"
             for i, m in enumerate(mirrors, 1):
-                status = "🟢 работает" if m["token"] in mirror_tasks ...
+                status = "🟢 работает" if m[0] in mirror_tasks else "🔴 остановлен"
                 text += f"{i}. {esc(m['label'])} — {status}\n"
             await callback.message.answer(text, parse_mode="HTML")
 
