@@ -126,7 +126,14 @@ async def handler(message: Message):
         f"📚 <b>Источников:</b> {sources_count}\n"
         f"⏱ <b>Время:</b> {time}s\n"
     )
-    dbs = full.get("Базовая информация", [])
+    base = full.get("Базовая информация", {})
+
+    if not isinstance(base, dict):
+        base = {}
+
+    country = base.get("country", "—")
+    region = base.get("region", "—")
+    status = base.get("amshel_status", "—")
 
     seen = set()
 
@@ -156,6 +163,7 @@ async def handler(message: Message):
         text += f"\n<b>{count}. Результат:</b>\n{clean}\n"
     for chunk in split_text(text):
         await message.answer(chunk, parse_mode="HTML")
+        
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
