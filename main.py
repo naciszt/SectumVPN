@@ -862,7 +862,7 @@ def make_router(is_mirror: bool = False) -> Router:
             if uid not in admin_state:
                 return  
             state = admin_state.pop(uid)
-            text  = message.text.strip()
+            text = message.text.strip()
 
             if state == "broadcast":
                 await do_broadcast(message.bot, text)
@@ -871,55 +871,48 @@ def make_router(is_mirror: bool = False) -> Router:
                 try:
                     target = int(text)
                     await ban_user(target)
-            await message.answer(
-            f"🚫 Пользователь <code>{target}</code> заблокирован.",
-            parse_mode="HTML"
-        )
-
+                    await message.answer(f"🚫 Пользователь <code>{target}</code> заблокирован.", parse_mode="HTML")
                 except ValueError:
                     await message.answer("❌ Неверный ID")
 
-           elif state == "unban":
+            elif state == "unban":
                try:
                    target = int(text)
                    await unban_user(target)
                    await message.answer(
-                       f"✅ Пользователь <code>{target}</code> разблокирован.",
-                       parse_mode="HTML"
+            f"✅ Пользователь <code>{target}</code> разблокирован.",
+            parse_mode="HTML"
                    )
+               except ValueError:
+                   await message.answer("❌ Неверный ID")
 
-           except ValueError:
-               await message.answer("❌ Неверный ID")
-
-           elif state == "limit":
+            elif state == "limit":
                try:
-                  parts = text.split()
-                  target = int(parts[0])
-                  count = int(parts[1])
+                   parts = text.split()
+                   target = int(parts[0])
+                   count = int(parts[1])
 
                    await set_limit(target, count)
 
                    await message.answer(
-                       f"🔢 Пользователю <code>{target}</code> установлен лимит: <b>{count}</b>",
-                       parse_mode="HTML"
+            f"🔢 Пользователю <code>{target}</code> установлен лимит: <b>{count}</b>",
+            parse_mode="HTML"
                    )
+               except (ValueError, IndexError):
+                   await message.answer("❌ Формат: <code>ID количество</code>", parse_mode="HTML")
 
-           except (ValueError, IndexError):
-               await message.answer("❌ Формат: <code>ID количество</code>", parse_mode="HTML")
+            elif state == "unlimit":
+                try:
+                    target = int(text)
+                    await remove_limit(target)
 
-           elif state == "unlimit":
-               try:
-                   target = int(text)
+                    await message.answer(
+            f"♾ Лимит снят с пользователя <code>{target}</code>",
+            parse_mode="HTML"
+                    )
+                except ValueError:
+                   await message.answer("❌ Неверный ID")
 
-                   await remove_limit(target)
-
-                   await message.answer(
-                       f"♾ Лимит снят с пользователя <code>{target}</code>",
-                       parse_mode="HTML"
-                   )
-
-            except ValueError:
-                await message.answer("❌ Неверный ID")
 
 
 # ═══════════════════════════════════════════════
