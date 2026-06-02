@@ -61,108 +61,118 @@ def clean_text(text: str) -> str:
             .replace("</em>", "")
             .strip()
     )
-
-def split_text(text: str, limit: int = 3500):
-    chunks = []
-    current = ""
-
-    for line in text.split("\n"):
-        if len(current) + len(line) + 1 > limit:
-            chunks.append(current)
-            current = ""
-        current += line + "\n"
-
-    if current:
-        chunks.append(current)
-
-    return chunks
     
 @router.message(F.text)
 async def handler(message: Message):
-    if not await checksubi(
-        message.bot,
-        message.from_user.id,
-        tgk
-      ):
+    if not await checksubi(message.bot, message.from_user.id, tgk):
         kb = InlineKeyboardBuilder()
         kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
         kb.button(text="✅ Проверить", callback_data="checksub")
-        
-        await message.answer_photo(photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg", caption="🔥 Для использование бота подпишитесь на наши телеграм каналы:)\n\n@kildoxer", reply_markup=kb.as_markup())
+
+        await message.answer_photo(
+            photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+            caption="🔥 Для использования бота подпишитесь на канал",
+            reply_markup=kb.as_markup()
+        )
         return
+
     async with aiohttp.ClientSession() as session:
         async with session.get(
             API_URL,
-            params={
-                "key": API_KEY,
-                "search": message.text
-            }
+            params={"key": API_KEY, "search": message.text}
         ) as resp:
             data = await resp.json()
+
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
         return
+
+    # ---------- FAST INFO ----------
     search = data.get("search", "—")
     detected = data.get("detected_type", "unknown")
     results_count = data.get("results_count", 0)
     sources_count = data.get("sources_count", 0)
     time = data.get("search_time", "—")
+
     fast = data.get("fast-result", {})
-    full = data.get("full-result", {})
     country = "—"
     region = "—"
+
     if isinstance(fast.get("country"), list) and fast["country"]:
         country = fast["country"][0][1]
+
     if isinstance(fast.get("region"), list) and fast["region"]:
         region = fast["region"][0][1]
 
+    # ---------- BASE INFO ----------
+    full = data.get("full-result", {})
+    base = full.get("Базовая информация", {})
+    if not isinstance(base, dict):
+        base = {}
+
+    status = base.get("amshel_status", "—")
+
+    # ---------- TEXT HEADER ----------
     text = (
         f"📊 <b>Результат поиска</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
         f"🌍 <b>Страна:</b> {country}\n"
-        f"🗺 <b>Регион:</b> {region}\n\n"
+        f"🗺 <b>Регион:</b> {region}\n"
+        f"📊 <b>Статус:</b> {status}\n\n"
         f"📦 <b>Результатов:</b> {results_count}\n"
         f"📚 <b>Источников:</b> {sources_count}\n"
         f"⏱ <b>Время:</b> {time}s\n"
     )
-    base = full.get("Базовая информация", {})
 
-    if not isinstance(base, dict):
-        base = {}
-
-    country = base.get("country", "—")
-    region = base.get("region", "—")
-    status = base.get("amshel_status", "—")
+    # ---------- DATABASE RESULTS ----------
+    dbs = full.get("Базы Данных", [])
+    if not isinstance(dbs, list):
+        dbs = []
 
     seen = set()
+    count = 0
 
     text += "\n📁 <b>Результаты из баз:</b>\n"
 
-    count = 0
-
     for db in dbs:
+        if not isinstance(db, dict):
+            continue
+
+        source = db.get("source", "unknown")
         info = db.get("info_leak", "")
+
         clean = clean_text(info)
 
-    # фильтр мусора
         if not clean:
             continue
         if "No results found" in clean:
             continue
-
-    # убираем дубли
         if clean in seen:
             continue
-        seen.add(clean)
 
+        seen.add(clean)
         count += 1
-        if count > 10:   # ограничение, иначе снова простыня
+
+        text += f"\n<b>{count}. {source}</b>\n{clean}\n"
+
+        if count >= 10:
             break
 
-        text += f"\n<b>{count}. Результат:</b>\n{clean}\n"
-    for chunk in split_text(text):
-        await message.answer(chunk, parse_mode="HTML")
+    # ---------- SAFE SEND (anti Telegram limit) ----------
+    def split_text(txt, limit=3500):
+        parts = []
+        while len(txt) > limit:
+            cut = txt.rfind("\n", 0, limit)
+            if cut == -1:
+                cut = limit
+            parts.append(txt[:cut])
+            txt = txt[cut:]
+        parts.append(txt)
+        return parts
+
+    for part in split_text(text):
+        await message.answer(part, parse_mode="HTML")
         
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
