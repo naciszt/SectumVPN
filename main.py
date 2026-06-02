@@ -782,7 +782,6 @@ def make_router(is_mirror: bool = False) -> Router:
     # ════════════════════════════════════
     
     if not is_mirror:
-
         @r.callback_query(F.data == "admin_panel")
         async def admin_panel(callback: CallbackQuery):
             if not is_admin(callback.from_user.id):
@@ -853,7 +852,7 @@ def make_router(is_mirror: bool = False) -> Router:
             text = "🪞 <b>Активные зеркала:</b>\n\n"
             for i, m in enumerate(mirrors, 1):
                 status = "🟢 работает" if m[0] in mirror_tasks else "🔴 остановлен"
-                text += f"{i}. {esc(m['label'])} — {status}\n"
+                text += f"{i}. {esc(m[1])} — {status}\n"
             await callback.message.answer(text, parse_mode="HTML")
 
         # -- Обработка состояний админа --
