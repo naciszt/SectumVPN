@@ -280,40 +280,8 @@ def is_admin(uid: int) -> bool:
     return uid in ADMIN_IDS
 
 
-def use_request(uid: int) -> bool:
-    """Возвращает True если запрос разрешён, уменьшает счётчик."""
-    lim = DB["limits"].get(str(uid))
-    if lim is None:
-        return True
-    if lim <= 0:
-        return False
-    DB["limits"][str(uid)] -= 1
-    save_data(DB)
-    return True
 
-def get_or_create_user(uid: int) -> dict:
-    key = str(uid)
-    if key not in DB["users"]:
-        DB["users"][key] = {
-            "requests": 0,
-            "first_seen": datetime.now().isoformat(),
-            "last_request": None,
-            "last_query": None,
-            "logs": []
-        }
-        save_data(DB)
-    return DB["users"][key]
 
-def update_user_stat(uid: int, search_type: str, query: str):
-    u = get_or_create_user(uid)
-    now = datetime.now()
-    u["requests"] += 1
-    u["last_request"] = now.isoformat()
-    u["last_query"] = query
-    u["logs"].append(f"[{now.strftime('%d.%m %H:%M')}] {search_type}: {query[:40]}")
-    if len(u["logs"]) > 20:
-        u["logs"] = u["logs"][-20:]
-    save_data(DB)
 
 # ═══════════════════════════════════════════════
 #  ПРОВЕРКА ПОДПИСКИ (через основной бот)
@@ -943,47 +911,63 @@ def make_router(is_mirror: bool = False) -> Router:
                 await do_broadcast(message.bot, text)
                 await message.answer("✅ Рассылка отправлена.")
 
-            elif state == "ban":
-                try:
-                    target = int(text)
-                    if target not in DB["banned"]:
-                        DB["banned"].append(target)
-                        save_data(DB)
-                    await message.answer(f"🚫 Пользователь <code>{target}</code> заблокирован.", parse_mode="HTML")
-                except ValueError:
-                    await message.answer("❌ Неверный ID")
+           elif state == "ban":
+    try:
+        target = int(text)
 
-            elif state == "unban":
-                try:
-                    target = int(text)
-                    if target in DB["banned"]:
-                        DB["banned"].remove(target)
-                        save_data(DB)
-                    await message.answer(f"✅ Пользователь <code>{target}</code> разблокирован.", parse_mode="HTML")
-                except ValueError:
-                    await message.answer("❌ Неверный ID")
+        await ban_user(target)
 
-            elif state == "limit":
-                try:
-                    parts  = text.split()
-                    target = int(parts[0])
-                    count  = int(parts[1])
-                    DB["limits"][str(target)] = count
-                    save_data(DB)
-                    await message.answer(f"🔢 Пользователю <code>{target}</code> установлен лимит: <b>{count}</b>", parse_mode="HTML")
-                except (ValueError, IndexError):
-                    await message.answer("❌ Формат: <code>ID количество</code>", parse_mode="HTML")
+        await message.answer(
+            f"🚫 Пользователь <code>{target}</code> заблокирован.",
+            parse_mode="HTML"
+        )
 
-            elif state == "unlimit":
-                try:
-                    target = int(text)
-                    DB["limits"].pop(str(target), None)
-                    save_data(DB)
-                    await message.answer(f"♾ Лимит снят с пользователя <code>{target}</code>", parse_mode="HTML")
-                except ValueError:
-                    await message.answer("❌ Неверный ID")
+    except ValueError:
+        await message.answer("❌ Неверный ID")
 
-    return r
+elif state == "unban":
+    try:
+        target = int(text)
+
+        await unban_user(target)
+
+        await message.answer(
+            f"✅ Пользователь <code>{target}</code> разблокирован.",
+            parse_mode="HTML"
+        )
+
+    except ValueError:
+        await message.answer("❌ Неверный ID")
+
+elif state == "limit":
+    try:
+        parts = text.split()
+        target = int(parts[0])
+        count = int(parts[1])
+
+        await set_limit(target, count)
+
+        await message.answer(
+            f"🔢 Пользователю <code>{target}</code> установлен лимит: <b>{count}</b>",
+            parse_mode="HTML"
+        )
+
+    except (ValueError, IndexError):
+        await message.answer("❌ Формат: <code>ID количество</code>", parse_mode="HTML")
+
+elif state == "unlimit":
+    try:
+        target = int(text)
+
+        await remove_limit(target)
+
+        await message.answer(
+            f"♾ Лимит снят с пользователя <code>{target}</code>",
+            parse_mode="HTML"
+        )
+
+    except ValueError:
+        await message.answer("❌ Неверный ID")
 
 
 # ═══════════════════════════════════════════════
