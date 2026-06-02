@@ -65,8 +65,7 @@ async def init_db():
 async def start_all_mirrors():
     mirrors = await get_mirrors()
     for token, label, status, _ in mirrors:
-        try:
-            await launch_mirror(token, label)
+        await launch_mirror(token, label)
         except Exception as e:
             print(f"[mirror error] {token}: {e}")
 
@@ -258,10 +257,6 @@ def esc(v) -> str:
 def is_admin(uid: int) -> bool:
     return uid in ADMIN_IDS
 
-def get_limit(uid: int):
-    """None = безлимит, int = осталось запросов."""
-    lim = DB.get("limits", {}).get(str(uid))
-    return lim  # None если нет записи
 
 def use_request(uid: int) -> bool:
     """Возвращает True если запрос разрешён, уменьшает счётчик."""
@@ -1000,6 +995,7 @@ async def launch_mirror(token: str, label: str):
     async def run():
         bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         mirror_bots[token] = bot
+
         dp = Dispatcher()
         dp.include_router(make_router(is_mirror=True))
 
@@ -1008,7 +1004,10 @@ async def launch_mirror(token: str, label: str):
         finally:
             await bot.session.close()
             mirror_bots.pop(token, None)
+            mirror_tasks.pop(token, None)
 
+    task = asyncio.create_task(run())
+    mirror_tasks[token] = task
 # ═══════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════
