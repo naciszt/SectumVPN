@@ -530,7 +530,7 @@ def make_router(is_mirror: bool = False) -> Router:
     async def menu_creator(callback: CallbackQuery):
         await callback.answer()
         await callback.message.answer(
-            "[🔍] KilD0xer L0okUp\n\n👨‍💻 <b>Чтобы пожаловаться по поводу бага пишите</b>\n\<a href='https://t.me/locga'>@locga</a>",
+            "[🔍] KilD0xer L0okUp\n\n👨‍💻 <b>Чтобы пожаловаться по поводу бага пишите</b>\n<a href='https://t.me/locga'>@locga</a>",
             parse_mode="HTML", disable_web_page_preview=True
         )
 
