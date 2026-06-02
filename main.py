@@ -7,7 +7,7 @@ from aiogram.types import Message
 
 router = Router()
 
-API_URL = "https://api.cryven.info/v1/chat"
+API_URL = "http://cryven.info/api/search"
 API_KEY = "@naciszt:9qVZfRS4"
 
 TOKEN = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
