@@ -119,8 +119,8 @@ async def handler(message: Message):
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(
-        message.bot,
-        message.from_user.id,
+        callback.bot,
+        callback.from_user.id,
         tgk
       ):
         kb = InlineKeyboardBuilder()
