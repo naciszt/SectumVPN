@@ -113,14 +113,17 @@ async def handler(message: Message):
     )
     dbs = full.get("Базы Данных", [])
     if dbs:
-        text += "\n📁 <b>Результаты из баз:</b>\n"
+        text += "\n📁 <b>Результаты из баз:</b>\n
         for i, db in enumerate(dbs, 1):
-            source = db.get("source", "unknown")
             info = db.get("info_leak", "")
+
             clean = clean_text(info)
-            text += f"\n<b>{i}. {source}</b>\n"
-            if clean:
-                text += f"{clean}\n"
+
+        # пропускаем пустые / мусор
+            if not clean or "No results found" in clean:
+                continue
+
+            text += f"\n<b>{i}. Результат:</b>\n{clean}\n"
     await message.answer(text, parse_mode="HTML")
 
 @router.callback_query(F.data == "checksub")
