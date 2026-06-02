@@ -550,7 +550,7 @@ def make_router(is_mirror: bool = False) -> Router:
     @r.message(Command("start"))
     async def start(message: Message):
         uid = message.from_user.id
-        if is_banned(uid):
+        if await is_banned(uid):
             await message.answer("🚫 Вы заблокированы.")
             return
         if not await checksubi(uid):
@@ -563,7 +563,7 @@ def make_router(is_mirror: bool = False) -> Router:
                 reply_markup=kb.as_markup()
             )
             return
-        get_or_create_user(uid)
+        await get_or_create_user(uid)
         await message.answer_photo(
             photo=banner,
             caption="<b>[🔍] KilD0xer L0okup</b>\n\nВыбери действие:",
@@ -712,7 +712,7 @@ def make_router(is_mirror: bool = False) -> Router:
         if uid not in admin_state:
             return
             uid = message.from_user.id
-        if is_banned(uid):
+        if await is_banned(uid):
             await message.answer("🚫 Вы заблокированы.")
             return
         if not await checksubi(uid):
@@ -759,7 +759,7 @@ def make_router(is_mirror: bool = False) -> Router:
             await wait.edit_text(f"❌ {esc(err)}", parse_mode="HTML")
             return
 
-        update_user_stat(uid, search_type, query)
+        await update_user_stat(uid, query)
         html_bytes = build_html_report(data, query, search_type).encode("utf-8")
         doc = BufferedInputFile(html_bytes, filename=f"report_{query[:20].replace(' ', '_')}.html")
         await wait.delete()
@@ -955,7 +955,7 @@ async def launch_mirror(token: str, label: str):
 
     task = asyncio.create_task(run())
     mirror_tasks[token] = task
-routernash = Router()  # должно быть так
+
 async def main():
     global _main_bot_ref
 
