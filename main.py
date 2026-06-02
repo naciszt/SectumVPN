@@ -350,7 +350,7 @@ def make_router(is_mirror: bool = False) -> Router:
             return
         get_or_create_user(uid)
         await message.answer_photo(
-            photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+            photo=banner,
             caption="<b>[🔍] KilD0xer L0okup</b>\n\nВыбери действие:",
             parse_mode="HTML",
             reply_markup=main_keyboard(uid)
