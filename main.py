@@ -12,30 +12,16 @@ API_KEY = "@naciszt:9qVZfRS4"
 
 TOKEN = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
 
-
 @router.message(F.text)
 async def handler(message: Message):
-    payload = {
-        "key": API_KEY,
-        "search": message.text
-    }
-
     async with aiohttp.ClientSession() as session:
-        async with session.post(API_URL, json=payload) as resp:
-            try:
-                data = await resp.json()
-            except:
-                data = await resp.text()
+        async with session.get(
+            API_URL,
+            params={"key": API_KEY, "search": message.text}
+        ) as resp:
+            data = await resp.json()
 
-    # Cryven обычно возвращает либо result, либо data
-    result = (
-        data.get("result")
-        or data.get("response")
-        or data
-    )
-
-    await message.answer(str(result))
-
+    await message.answer(str(data))
 
 async def main():
     bot = Bot(TOKEN)
@@ -46,9 +32,6 @@ async def main():
     print("Bot started")
     await dp.start_polling(bot)
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
 
 if __name__ == "__main__":
     asyncio.run(main())
