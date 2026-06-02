@@ -61,6 +61,21 @@ def clean_text(text: str) -> str:
             .replace("</em>", "")
             .strip()
     )
+
+def split_text(text: str, limit: int = 3500):
+    chunks = []
+    current = ""
+
+    for line in text.split("\n"):
+        if len(current) + len(line) + 1 > limit:
+            chunks.append(current)
+            current = ""
+        current += line + "\n"
+
+    if current:
+        chunks.append(current)
+
+    return chunks
     
 @router.message(F.text)
 async def handler(message: Message):
@@ -124,8 +139,8 @@ async def handler(message: Message):
                 continue
 
             text += f"\n<b>{i}. Результат:</b>\n{clean}\n"
-    await message.answer(text, parse_mode="HTML")
-
+    for chunk in split_text(text):
+        await message.answer(chunk, parse_mode="HTML")
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
