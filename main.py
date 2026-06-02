@@ -16,7 +16,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import FSInputFile
 
-
+banner = FSInputFile("banner.jpg")
 # ═══════════════════════════════════════════════
 #  КОНФИГ
 # ═══════════════════════════════════════════════
@@ -343,7 +343,7 @@ def make_router(is_mirror: bool = False) -> Router:
             kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
             kb.button(text="✅ Проверить",      callback_data="checksub")
             await message.answer_photo(
-                photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
+                photo=banner,
                 caption="🔥 Для использования бота подпишитесь на каналы\n\n@kildoxer",
                 reply_markup=kb.as_markup()
             )
@@ -366,7 +366,7 @@ def make_router(is_mirror: bool = False) -> Router:
         await callback.answer("✅ Доступ подтверждён", show_alert=True)
         get_or_create_user(uid)
         await callback.message.edit_caption(
-            caption="<b>💎 Kildoxer Info</b>\n\nВыбери действие:",
+            caption="<b>[🔍] Kild0xer L0okUp</b>\n\nВыбери действие:",
             parse_mode="HTML",
             reply_markup=main_keyboard(uid)
         )
