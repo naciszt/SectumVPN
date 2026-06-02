@@ -127,18 +127,33 @@ async def handler(message: Message):
         f"⏱ <b>Время:</b> {time}s\n"
     )
     dbs = full.get("Базы Данных", [])
-    if dbs:
-        text += "\n📁 <b>Результаты из баз:</b>\n"
-        for i, db in enumerate(dbs, 1):
-            info = db.get("info_leak", "")
 
-            clean = clean_text(info)
+    seen = set()
 
-        # пропускаем пустые / мусор
-            if not clean or "No results found" in clean:
-                continue
+    text += "\n📁 <b>Результаты из баз:</b>\n"
 
-            text += f"\n<b>{i}. Результат:</b>\n{clean}\n"
+    count = 0
+
+    for db in dbs:
+        info = db.get("info_leak", "")
+        clean = clean_text(info)
+
+    # фильтр мусора
+        if not clean:
+            continue
+        if "No results found" in clean:
+            continue
+
+    # убираем дубли
+        if clean in seen:
+            continue
+        seen.add(clean)
+
+        count += 1
+        if count > 10:   # ограничение, иначе снова простыня
+            break
+
+        text += f"\n<b>{count}. Результат:</b>\n{clean}\n"
     for chunk in split_text(text):
         await message.answer(chunk, parse_mode="HTML")
 @router.callback_query(F.data == "checksub")
