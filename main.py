@@ -48,7 +48,8 @@ async def init_db():
         CREATE TABLE IF NOT EXISTS mirrors (
             token TEXT PRIMARY KEY,
             label TEXT,
-            status TEXT
+            status TEXT,
+            last_start TEXT
         );
 
         CREATE TABLE IF NOT EXISTS banned (
@@ -57,10 +58,61 @@ async def init_db():
 
         CREATE TABLE IF NOT EXISTS limits (
             user_id INTEGER PRIMARY KEY,
-            limit INTEGER
+            user_limit INTEGER DEFAULT NULL
         );
         """)
+
         await db.commit()
+
+async def get_user(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("SELECT * FROM users WHERE id=?", (uid,))
+        return await cur.fetchone()
+
+async def create_user(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR IGNORE INTO users (id, first_seen) VALUES (?, datetime('now'))",
+            (uid,)
+        )
+        await db.commit()
+
+async def is_banned(uid: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("SELECT 1 FROM banned WHERE user_id=?", (uid,))
+        return await cur.fetchone() is not None
+
+async def get_limit(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute(
+            "SELECT user_limit FROM limits WHERE user_id=?",
+            (uid,)
+        )
+        row = await cur.fetchone()
+        return row[0] if row else None
+        
+async def use_request(uid: int) -> bool:
+    lim = await get_limit(uid)
+
+    if lim is None:
+        return True
+
+    if lim <= 0:
+        return False
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO limits(user_id, user_limit)
+            VALUES(?, ?)
+            ON CONFLICT(user_id)
+            DO UPDATE SET user_limit = user_limit - 1
+            """,
+            (uid, lim)
+        )
+        await db.commit()
+
+    return True
 
 async def add_mirror_db(token: str, label: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -118,9 +170,6 @@ def esc(v) -> str:
 
 def is_admin(uid: int) -> bool:
     return uid in ADMIN_IDS
-
-def is_banned(uid: int) -> bool:
-    return uid in DB.get("banned", [])
 
 def get_limit(uid: int):
     """None = безлимит, int = осталось запросов."""
@@ -590,14 +639,14 @@ def make_router(is_mirror: bool = False) -> Router:
             return
 
         # Проверяем дубли
-        existing = [m["token"] for m in DB["mirrors"]]
+        mirrors = await get_mirrors()
+        existing = [m[0] for m in mirrors]  # token — первая колонка
+        await add_mirror_db(token, label)
         if token in existing:
             await wait.edit_text("⚠️ Это зеркало уже добавлено.")
             return
 
         label = f"@{me.username}"
-        DB["mirrors"].append({"token": token, "label": label})
-        save_data(DB)
 
         # Запускаем зеркало
         await launch_mirror(token, label)
@@ -606,6 +655,7 @@ def make_router(is_mirror: bool = False) -> Router:
             f"Бот: <a href='https://t.me/{me.username}'>{esc(label)}</a>",
             parse_mode="HTML"
         )
+        
 
     # ---- Выбор типа поиска ----
     @r.callback_query(F.data.startswith("stype_"))
@@ -625,8 +675,12 @@ def make_router(is_mirror: bool = False) -> Router:
 
     # ---- ПОИСК ----
     @r.message(F.text & ~F.text.startswith("/"))
-    async def handler(message: Message):
+    async def admin_state_handler(message: Message):
         uid = message.from_user.id
+
+        if uid not in admin_state:
+            return
+            uid = message.from_user.id
         if is_banned(uid):
             await message.answer("🚫 Вы заблокированы.")
             return
@@ -703,7 +757,7 @@ def make_router(is_mirror: bool = False) -> Router:
                 await callback.answer("⛔ Нет доступа", show_alert=True)
                 return
             await callback.answer()
-            mirrors_count = len(DB["mirrors"])
+            mirrors_count = await add_mirror_db(token, label)
             users_count   = len(DB["users"])
             banned_count  = len(DB["banned"])
             await callback.message.answer(
@@ -760,13 +814,13 @@ def make_router(is_mirror: bool = False) -> Router:
         async def admin_mirrors_list(callback: CallbackQuery):
             if not is_admin(callback.from_user.id): return
             await callback.answer()
-            mirrors = DB["mirrors"]
+            mirrors = await get_mirrors()
             if not mirrors:
                 await callback.message.answer("🪞 Зеркал нет.")
                 return
             text = "🪞 <b>Активные зеркала:</b>\n\n"
             for i, m in enumerate(mirrors, 1):
-                status = "🟢 работает" if m["token"] in mirror_tasks and not mirror_tasks[m["token"]].done() else "🔴 стоп"
+                status = "🟢 работает" if m["token"] in mirror_tasks ...
                 text += f"{i}. {esc(m['label'])} — {status}\n"
             await callback.message.answer(text, parse_mode="HTML")
 
@@ -854,27 +908,19 @@ async def do_broadcast(main_bot: Bot, text: str):
 # ═══════════════════════════════════════════════
 async def launch_mirror(token: str, label: str):
     if token in mirror_tasks and not mirror_tasks[token].done():
-        return  # уже работает
+        return
 
     async def run():
-        bot = Bot(
-            token,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-        )
+        bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         mirror_bots[token] = bot
-        dp  = Dispatcher()
+        dp = Dispatcher()
         dp.include_router(make_router(is_mirror=True))
-        print(f"[MIRROR] {label} запущен")
+
         try:
             await dp.start_polling(bot, handle_signals=False)
-        except Exception as e:
-            print(f"[MIRROR] {label} упал: {e}")
         finally:
+            await bot.session.close()
             mirror_bots.pop(token, None)
-            print(f"[MIRROR] {label} остановлен")
-
-    task = asyncio.create_task(run())
-    mirror_tasks[token] = task
 
 # ═══════════════════════════════════════════════
 #  MAIN
