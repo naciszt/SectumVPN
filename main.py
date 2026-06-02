@@ -61,18 +61,49 @@ async def handler(message: Message):
             params={"key": API_KEY, "search": message.text}
         ) as resp:
             data = await resp.json()
+
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
         return
-    lines = flatten_json(data)
-    chunk = ""
-    for line in lines:
-        if len(chunk) + len(line) + 1 > 3500:
-            await message.answer(chunk)
-            chunk = ""
-        chunk += line + "\n"
-    if chunk:
-        await message.answer(chunk)
+
+    search = data.get("search", "—")
+    detected = data.get("detected_type", "unknown")
+    results_count = data.get("results_count", 0)
+    sources_count = data.get("sources_count", 0)
+    time = data.get("search_time", "—")
+
+    fast = data.get("fast-result", {})
+    full = data.get("full-result", {})
+
+    country = "—"
+    region = "—"
+
+    if isinstance(fast.get("country"), list) and fast["country"]:
+        country = fast["country"][0][1]
+
+    if isinstance(fast.get("region"), list) and fast["region"]:
+        region = fast["region"][0][1]
+
+    text = (
+        f"📊 <b>Результат поиска</b>\n\n"
+        f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
+        f"📌 <b>Тип:</b> {detected}\n\n"
+        f"🌍 <b>Страна:</b> {country}\n"
+        f"🗺 <b>Регион:</b> {region}\n\n"
+        f"📦 <b>Результатов:</b> {results_count}\n"
+        f"📚 <b>Источников:</b> {sources_count}\n"
+        f"⏱ <b>Время:</b> {time}s\n"
+    )
+
+    # если есть базы данных
+    dbs = full.get("Базы Данных", [])
+    if dbs:
+        text += "\n📁 <b>Базы:</b>\n"
+        for i, db in enumerate(dbs[:5], 1):
+            source = db.get("source", "unknown")
+            text += f"{i}. {source}\n"
+
+    await message.answer(text, parse_mode="HTML")
 
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
