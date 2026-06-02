@@ -113,7 +113,7 @@ async def handler(message: Message):
     )
     dbs = full.get("Базы Данных", [])
     if dbs:
-        text += "\n📁 <b>Результаты из баз:</b>\n
+        text += "\n📁 <b>Результаты из баз:</b>\n"
         for i, db in enumerate(dbs, 1):
             info = db.get("info_leak", "")
 
