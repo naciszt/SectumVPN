@@ -62,32 +62,102 @@ def clean_text(text: str) -> str:
             .strip()
     )
     
+import io
+from aiogram.types import BufferedInputFile
+
+def build_html_report(data, search):
+    fast = data.get("fast-result", {})
+    full = data.get("full-result", {})
+
+    def esc(x):
+        return str(x).replace("<", "&lt;").replace(">", "&gt;")
+
+    html = f"""
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>OSINT Report</title>
+        <style>
+            body {{
+                font-family: Arial;
+                background: #0f0f0f;
+                color: #eaeaea;
+                padding: 20px;
+            }}
+            .box {{
+                background: #1c1c1c;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }}
+            .title {{
+                font-size: 20px;
+                margin-bottom: 10px;
+                color: #4da3ff;
+            }}
+            .item {{
+                margin: 4px 0;
+            }}
+        </style>
+    </head>
+    <body>
+
+    <div class="box">
+        <div class="title">📊 OSINT Report</div>
+        <div class="item">🔎 Query: <b>{esc(search)}</b></div>
+    </div>
+
+    <div class="box">
+        <div class="title">⚡ Fast Result</div>
+    """
+
+    def walk(obj):
+        nonlocal html
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                html += f'<div class="item"><b>{esc(k)}:</b> {esc(v)}</div>'
+        elif isinstance(obj, list):
+            for i in obj:
+                walk(i)
+        else:
+            html += f'<div class="item">{esc(obj)}</div>'
+
+    walk(fast)
+
+    html += """
+    </div>
+
+    <div class="box">
+        <div class="title">📁 Full Result</div>
+    """
+
+    def walk2(obj):
+        nonlocal html
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k == "info_leak":
+                    continue
+                html += f'<div class="item"><b>{esc(k)}:</b> {esc(v)}</div>'
+        elif isinstance(obj, list):
+            for i in obj:
+                walk2(i)
+        else:
+            html += f'<div class="item">{esc(obj)}</div>'
+
+    walk2(full)
+
+    html += "</div></body></html>"
+    return html
+
+
 @router.message(F.text)
 async def handler(message: Message):
-    if not await checksubi(message.bot, message.from_user.id, tgk):
-        kb = InlineKeyboardBuilder()
-        kb.button(text="🏴‍☠️ Подписаться", url="https://t.me/+O3Nsqbyb6c8zMzli")
-        kb.button(text="✅ Проверить", callback_data="checksub")
-
-        await message.answer_photo(
-            photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
-            caption="Подпишись сначала.",
-            reply_markup=kb.as_markup()
-        )
-        return
-
     async with aiohttp.ClientSession() as session:
         async with session.get(
             API_URL,
             params={"key": API_KEY, "search": message.text}
         ) as resp:
-
-            # защита от 429 / html
-            try:
-                data = await resp.json()
-            except:
-                await message.answer("❌ API не ответило JSON (429/ошибка)")
-                return
+            data = await resp.json()
 
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
@@ -99,83 +169,35 @@ async def handler(message: Message):
     fast = data.get("fast-result", {})
     full = data.get("full-result", {})
 
-    # --------- базовые поля ---------
-    country = "—"
-    region = "—"
-    email = "—"
-    phone = "—"
-    fullname = "—"
-
-    def extract(obj):
-        nonlocal country, region, email, phone, fullname
-
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                extract(v)
-
-        elif isinstance(obj, list):
-            for i in obj:
-                extract(i)
-
-        elif isinstance(obj, str):
-            val = obj.strip()
-
-            if "@" in val:
-                email = val
-            elif val.startswith("+") or val.isdigit():
-                phone = val
-            elif val.lower() in ["россия", "russia"]:
-                country = val
-            elif "европа" in val.lower() or "регион" in val.lower():
-                region = val
-            elif len(val.split()) <= 3:
-                fullname = val
-
-    extract(fast)
-
-    # --------- результат ---------
+    # -------- TEXT --------
     text = (
         f"📊 <b>Результат поиска</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
-        f"🌍 <b>Страна:</b> {country}\n"
-        f"🗺 <b>Регион:</b> {region}\n\n"
-        f"📧 <b>Email:</b> {email}\n"
-        f"📞 <b>Телефон:</b> {phone}\n"
-        f"👤 <b>Имя:</b> {fullname}\n"
+        f"⚡ <b>Быстрые данные:</b>\n"
     )
 
-    # --------- чистый full-result (без бд-шумa) ---------
-    values = set()
+    for k, v in fast.items():
+        text += f"• <b>{k}:</b> {v}\n"
 
-    def collect(obj):
-        if isinstance(obj, dict):
-            for v in obj.values():
-                collect(v)
-        elif isinstance(obj, list):
-            for i in obj:
-                collect(i)
-        else:
-            s = str(obj).strip()
+    text += "\n📁 <b>Полный результат:</b>\n"
 
-            # фильтр мусора
-            if any(x in s.lower() for x in ["source", "info_leak", "database"]):
-                return
+    for k, v in full.items():
+        if k == "Базы Данных":
+            continue
+        text += f"• <b>{k}</b>: {v}\n"
 
-            if len(s) > 2:
-                values.add(s)
+    await message.answer(text, parse_mode="HTML")
 
-    collect(full)
+    # -------- HTML FILE --------
+    html = build_html_report(data, message.text)
 
-    if values:
-        text += "\n📁 <b>Данные:</b>\n"
-        for v in list(values)[:15]:  # ограничение
-            text += f"• {v}\n"
+    file = BufferedInputFile(
+        html.encode("utf-8"),
+        filename="report.html"
+    )
 
-    # --------- защита от лимита telegram ---------
-    for i in range(0, len(text), 3500):
-        await message.answer(text[i:i+3500], parse_mode="HTML")
-        
+    await message.answer_document(file, caption="📄 Полный HTML отчёт")
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
