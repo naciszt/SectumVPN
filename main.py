@@ -55,139 +55,106 @@ async def start(message: Message):
 
 <b>Наш телеграм канал: @kildoxer</b>""", parse_mode="HTML")
 
-def clean_text(text: str) -> str:
-    return (
-        text.replace("<em>", "")
-            .replace("</em>", "")
-            .strip()
-    )
-    
 import aiohttp
-from aiogram.types import BufferedInputFile
 
-# ---------- safe send ----------
-async def safe_send(message, text, limit=3500):
-    while len(text) > limit:
-        cut = text.rfind("\n", 0, limit)
-        if cut == -1:
-            cut = limit
-        await message.answer(text[:cut], parse_mode="HTML")
-        text = text[cut:]
-    await message.answer(text, parse_mode="HTML")
+# ---------- helpers ----------
 
+def clean_list(data):
+    """[['type','value']] -> unique values"""
+    if not isinstance(data, list):
+        return []
 
-# ---------- HTML REPORT ----------
-def build_html(data, query):
-    fast = data.get("fast-result", {})
-    full = data.get("full-result", {})
-
-    def esc(x):
-        return str(x).replace("<", "&lt;").replace(">", "&gt;")
-
-    html = f"""
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        body {{ background:#0f0f0f; color:#eee; font-family:Arial; padding:20px; }}
-        .box {{ background:#1c1c1c; padding:15px; border-radius:10px; margin-bottom:10px; }}
-        .title {{ color:#4da3ff; font-size:20px; margin-bottom:10px; }}
-        .item {{ margin:4px 0; }}
-    </style>
-    </head>
-    <body>
-
-    <div class="box">
-        <div class="title">📊 OSINT REPORT</div>
-        <div class="item">🔎 Query: <b>{esc(query)}</b></div>
-    </div>
-
-    <div class="box">
-        <div class="title">⚡ Fast Result</div>
-    """
-
-    for k, v in fast.items():
-        html += f"<div class='item'><b>{esc(k)}:</b> {esc(v)}</div>"
-
-    html += """
-    </div>
-
-    <div class="box">
-        <div class="title">📁 Full Result</div>
-    """
-
-    def walk(obj):
-        nonlocal html
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                if k in ["source", "info_leak", "database"]:
-                    continue
-                html += f"<div class='item'><b>{esc(k)}:</b> {esc(v)}</div>"
-        elif isinstance(obj, list):
-            for i in obj:
-                walk(i)
-        else:
-            html += f"<div class='item'>{esc(obj)}</div>"
-
-    walk(full)
-
-    html += "</div></body></html>"
-    return html
+    out = []
+    for item in data:
+        if isinstance(item, list) and len(item) == 2:
+            val = str(item[1]).strip()
+            if val and val not in out:
+                out.append(val)
+    return out
 
 
-# ---------- MAIN HANDLER ----------
-@router.message(F.text)
-async def handler(message: Message):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            API_URL,
-            params={"key": API_KEY, "search": message.text}
-        ) as resp:
-            try:
-                data = await resp.json()
-            except:
-                await message.answer("❌ API error (not JSON / rate limit)")
-                return
+def split_text(text, limit=3500):
+    return [text[i:i + limit] for i in range(0, len(text), limit)]
 
-    if not data.get("success"):
-        await message.answer("❌ Ничего не найдено")
-        return
+
+def build_report(data: dict) -> str:
+    fast = data.get("fast-result", {}) or {}
+    full = data.get("full-result", {}) or {}
 
     search = data.get("search", "—")
-    detected = data.get("detected_type", "—")
-    results = data.get("results_count", 0)
-    sources = data.get("sources_count", 0)
+    detected = data.get("detected_type", "unknown")
+    results_count = data.get("results_count", 0)
+    sources_count = data.get("sources_count", 0)
     time = data.get("search_time", "—")
 
-    fast = data.get("fast-result", {})
+    # FAST DATA
+    phone = clean_list(fast.get("phone"))
+    email = clean_list(fast.get("email"))
+    fullname = clean_list(fast.get("fullname"))
+    region = clean_list(fast.get("region"))
+    country = clean_list(fast.get("country"))
 
-    # ---------- TEXT (SHORT) ----------
+    # BASE INFO
+    base = full.get("Базовая информация", {}) if isinstance(full.get("Базовая информация"), dict) else {}
+
     text = (
-        f"📊 <b>Результат поиска</b>\n\n"
+        f"📊 <b>РЕЗУЛЬТАТ ПОИСКА</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
-        f"📦 <b>Результатов:</b> {results}\n"
-        f"📚 <b>Источников:</b> {sources}\n"
-        f"⏱ <b>Время:</b> {time}s\n\n"
-        f"⚡ <b>Fast data:</b>\n"
+        f"🌍 <b>Страна:</b> {country[0] if country else '—'}\n"
+        f"🗺 <b>Регион:</b> {region[0] if region else '—'}\n\n"
+        f"📦 <b>Результатов:</b> {results_count}\n"
+        f"📚 <b>Источников:</b> {sources_count}\n"
+        f"⏱ <b>Время:</b> {time}s\n"
     )
 
-    # только полезное из fast-result
-    for k, v in fast.items():
-        text += f"• <b>{k}:</b> {v}\n"
+    # FAST BLOCK
+    text += "\n📁 <b>БЫСТРЫЕ ДАННЫЕ</b>\n"
 
-    await safe_send(message, text)
+    if fullname:
+        text += f"👤 <b>Имя:</b> {', '.join(fullname)}\n"
+    if phone:
+        text += f"📞 <b>Телефон:</b> {', '.join(phone)}\n"
+    if email:
+        text += f"📧 <b>Email:</b> {', '.join(email)}\n"
 
-    # ---------- HTML FILE ----------
-    html = build_html(data, message.text)
+    # BASE INFO CLEAN
+    if base:
+        text += "\n📍 <b>БАЗОВАЯ ИНФОРМАЦИЯ</b>\n"
+        for k, v in base.items():
+            text += f"• {k}: {v}\n"
 
-    file = BufferedInputFile(
-        html.encode("utf-8"),
-        filename="report.html"
-    )
+    # DB DATA CLEAN
+    dbs = full.get("Базы Данных", [])
+    if not isinstance(dbs, list):
+        dbs = []
 
-    await message.answer_document(file, caption="📄 Полный отчёт (HTML)")
+    text += "\n📦 <b>ДАННЫЕ ИЗ БАЗ</b>\n"
 
+    seen = set()
+    count = 0
+
+    for db in dbs:
+        if not isinstance(db, dict):
+            continue
+
+        source = db.get("source", "unknown")
+        info = db.get("info_leak", "") or db.get("description", "") or ""
+
+        info_clean = str(info).strip()
+
+        if not info_clean or info_clean in seen:
+            continue
+
+        seen.add(info_clean)
+        count += 1
+
+        text += f"\n🔹 <b>{count}. {source}</b>\n{info_clean}\n"
+
+        if count >= 10:
+            break
+
+    return text
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
