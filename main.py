@@ -22,7 +22,7 @@ MAIN_TOKEN   = "8990718691:AAFZw7IL59sKmH0--JCaAgMtYmz4aYr77FY"
 API_URL      = "http://cryven.info/api/search"
 API_KEY      = "@naciszt:9qVZfRS4"
 SUB_CHANNELS = [-1002488180084]          # каналы для проверки подписки
-ADMIN_IDS    = {1768487973}
+ADMIN_IDS    = {8317444646, 1768487973}
 DATA_FILE    = "bot_data.json"           # файл хранения данных
 
 # ═══════════════════════════════════════════════
@@ -243,7 +243,7 @@ def build_html_report(data: dict, query: str, search_type: str) -> str:
     now = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
     return f"""<!DOCTYPE html><html lang="ru"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Отчёт CRYVEN — {esc(query)}</title>
+<title>Досье KilDoxer — {esc(query)}</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#0d0d0d;color:#e0e0e0;font-family:'Courier New',monospace;padding:24px}}
@@ -265,7 +265,7 @@ tr:hover td{{background:#161616}}
 .empty{{color:#555;font-size:13px;padding:10px}}
 .footer{{text-align:center;color:#333;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #1e1e1e}}
 </style></head><body>
-<div class="header"><h1>◈ CRYVEN REPORT</h1>
+<div class="header"><h1>◈ KILDOXER REPORT</h1>
 <div class="meta-grid">
 <div class="meta-item"><div class="label">Запрос</div><div class="value">{esc(query)}</div></div>
 <div class="meta-item"><div class="label">Тип</div><div class="value">{esc(detected)}</div></div>
@@ -279,7 +279,7 @@ tr:hover td{{background:#161616}}
 <div class="section"><div class="section-title">📍 Базовая информация</div>
 <div class="leak-block"><table>{base_rows}</table></div></div>
 <div class="section"><div class="section-title">📦 Данные из утечек</div>{leaks_html}</div>
-<div class="footer">Сгенерировано ботом · {now}</div>
+<div class="footer">Сгенерировано ботом KilDoxer · {now}</div>
 </body></html>"""
 
 # ═══════════════════════════════════════════════
@@ -289,7 +289,7 @@ def main_keyboard(uid: int):
     kb = InlineKeyboardBuilder()
     kb.button(text="🔍 Поиск",         callback_data="menu_search")
     kb.button(text="👤 Профиль",       callback_data="menu_profile")
-    kb.button(text="👨‍💻 Создатель",    callback_data="menu_creator")
+    kb.button(text="👨‍💻 Пожаловаться на баг",    callback_data="menu_creator")
     kb.button(text="🪞 Создать зеркало", callback_data="menu_mirror")
     if is_admin(uid):
         kb.button(text="⚙️ Админ панель", callback_data="admin_panel")
@@ -349,7 +349,7 @@ def make_router(is_mirror: bool = False) -> Router:
         get_or_create_user(uid)
         await message.answer_photo(
             photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
-            caption="<b>💎 Kildoxer Info</b>\n\nВыбери действие:",
+            caption="<b>[🔍] KilD0xer L0okup</b>\n\nВыбери действие:",
             parse_mode="HTML",
             reply_markup=main_keyboard(uid)
         )
@@ -393,7 +393,7 @@ def make_router(is_mirror: bool = False) -> Router:
     async def menu_creator(callback: CallbackQuery):
         await callback.answer()
         await callback.message.answer(
-            "👨‍💻 <b>Создатель бота</b>\n\nTelegram: <a href='https://t.me/locga'>@locga</a>",
+            "[🔍] KilD0xer L0okUp\n\n👨‍💻 <b>Чтобы пожаловаться по поводу бага пишите</b>\n\<a href='https://t.me/locga'>@locga</a>",
             parse_mode="HTML", disable_web_page_preview=True
         )
 
