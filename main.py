@@ -211,7 +211,29 @@ async def set_mirror_status(token: str, status: str):
         """, (status, token))
         await db.commit()
 
+async def monitor_mirrors():
+    while True:
+        try:
+            mirrors = await get_mirrors()
 
+            for token, label, status, _ in mirrors:
+                task = mirror_tasks.get(token)
+
+                # если задачи нет или она умерла — перезапуск
+                if task is None or task.done():
+                    print(f"[monitor] restarting mirror {token}")
+
+                    try:
+                        await launch_mirror(token, label)
+                    except Exception as e:
+                        print(f"[monitor error] {token}: {e}")
+
+            await asyncio.sleep(30)
+
+        except Exception as e:
+            print(f"[monitor loop error]: {e}")
+            await asyncio.sleep(30)
+            
 # ═══════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════
