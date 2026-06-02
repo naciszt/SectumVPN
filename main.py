@@ -62,10 +62,22 @@ def clean_text(text: str) -> str:
             .strip()
     )
     
-import io
+import aiohttp
 from aiogram.types import BufferedInputFile
 
-def build_html_report(data, search):
+# ---------- safe send ----------
+async def safe_send(message, text, limit=3500):
+    while len(text) > limit:
+        cut = text.rfind("\n", 0, limit)
+        if cut == -1:
+            cut = limit
+        await message.answer(text[:cut], parse_mode="HTML")
+        text = text[cut:]
+    await message.answer(text, parse_mode="HTML")
+
+
+# ---------- HTML REPORT ----------
+def build_html(data, query):
     fast = data.get("fast-result", {})
     full = data.get("full-result", {})
 
@@ -75,54 +87,27 @@ def build_html_report(data, search):
     html = f"""
     <html>
     <head>
-        <meta charset="utf-8">
-        <title>OSINT Report</title>
-        <style>
-            body {{
-                font-family: Arial;
-                background: #0f0f0f;
-                color: #eaeaea;
-                padding: 20px;
-            }}
-            .box {{
-                background: #1c1c1c;
-                padding: 15px;
-                border-radius: 10px;
-                margin-bottom: 10px;
-            }}
-            .title {{
-                font-size: 20px;
-                margin-bottom: 10px;
-                color: #4da3ff;
-            }}
-            .item {{
-                margin: 4px 0;
-            }}
-        </style>
+    <meta charset="utf-8">
+    <style>
+        body {{ background:#0f0f0f; color:#eee; font-family:Arial; padding:20px; }}
+        .box {{ background:#1c1c1c; padding:15px; border-radius:10px; margin-bottom:10px; }}
+        .title {{ color:#4da3ff; font-size:20px; margin-bottom:10px; }}
+        .item {{ margin:4px 0; }}
+    </style>
     </head>
     <body>
 
     <div class="box">
-        <div class="title">📊 OSINT Report</div>
-        <div class="item">🔎 Query: <b>{esc(search)}</b></div>
+        <div class="title">📊 OSINT REPORT</div>
+        <div class="item">🔎 Query: <b>{esc(query)}</b></div>
     </div>
 
     <div class="box">
         <div class="title">⚡ Fast Result</div>
     """
 
-    def walk(obj):
-        nonlocal html
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                html += f'<div class="item"><b>{esc(k)}:</b> {esc(v)}</div>'
-        elif isinstance(obj, list):
-            for i in obj:
-                walk(i)
-        else:
-            html += f'<div class="item">{esc(obj)}</div>'
-
-    walk(fast)
+    for k, v in fast.items():
+        html += f"<div class='item'><b>{esc(k)}:</b> {esc(v)}</div>"
 
     html += """
     </div>
@@ -131,25 +116,26 @@ def build_html_report(data, search):
         <div class="title">📁 Full Result</div>
     """
 
-    def walk2(obj):
+    def walk(obj):
         nonlocal html
         if isinstance(obj, dict):
             for k, v in obj.items():
-                if k == "info_leak":
+                if k in ["source", "info_leak", "database"]:
                     continue
-                html += f'<div class="item"><b>{esc(k)}:</b> {esc(v)}</div>'
+                html += f"<div class='item'><b>{esc(k)}:</b> {esc(v)}</div>"
         elif isinstance(obj, list):
             for i in obj:
-                walk2(i)
+                walk(i)
         else:
-            html += f'<div class="item">{esc(obj)}</div>'
+            html += f"<div class='item'>{esc(obj)}</div>"
 
-    walk2(full)
+    walk(full)
 
     html += "</div></body></html>"
     return html
 
 
+# ---------- MAIN HANDLER ----------
 @router.message(F.text)
 async def handler(message: Message):
     async with aiohttp.ClientSession() as session:
@@ -157,7 +143,11 @@ async def handler(message: Message):
             API_URL,
             params={"key": API_KEY, "search": message.text}
         ) as resp:
-            data = await resp.json()
+            try:
+                data = await resp.json()
+            except:
+                await message.answer("❌ API error (not JSON / rate limit)")
+                return
 
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
@@ -165,40 +155,40 @@ async def handler(message: Message):
 
     search = data.get("search", "—")
     detected = data.get("detected_type", "—")
+    results = data.get("results_count", 0)
+    sources = data.get("sources_count", 0)
+    time = data.get("search_time", "—")
 
     fast = data.get("fast-result", {})
-    full = data.get("full-result", {})
 
-    # -------- TEXT --------
+    # ---------- TEXT (SHORT) ----------
     text = (
         f"📊 <b>Результат поиска</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
-        f"⚡ <b>Быстрые данные:</b>\n"
+        f"📦 <b>Результатов:</b> {results}\n"
+        f"📚 <b>Источников:</b> {sources}\n"
+        f"⏱ <b>Время:</b> {time}s\n\n"
+        f"⚡ <b>Fast data:</b>\n"
     )
 
+    # только полезное из fast-result
     for k, v in fast.items():
         text += f"• <b>{k}:</b> {v}\n"
 
-    text += "\n📁 <b>Полный результат:</b>\n"
+    await safe_send(message, text)
 
-    for k, v in full.items():
-        if k == "Базы Данных":
-            continue
-        text += f"• <b>{k}</b>: {v}\n"
-
-    await message.answer(text, parse_mode="HTML")
-
-    # -------- HTML FILE --------
-    html = build_html_report(data, message.text)
+    # ---------- HTML FILE ----------
+    html = build_html(data, message.text)
 
     file = BufferedInputFile(
         html.encode("utf-8"),
         filename="report.html"
     )
 
-    await message.answer_document(file, caption="📄 Полный HTML отчёт")
-@router.callback_query(F.data == "checksub")
+    await message.answer_document(file, caption="📄 Полный отчёт (HTML)")
+
+    @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
     if not await checksubi(callback.bot, callback.from_user.id, tgk):
 
