@@ -71,7 +71,7 @@ async def handler(message: Message):
 
         await message.answer_photo(
             photo="https://i.ibb.co/RT63FqRh/IMG-7670.jpg",
-            caption="🔥 Подпишись на канал для использования бота",
+            caption="Подпишись сначала.",
             reply_markup=kb.as_markup()
         )
         return
@@ -81,86 +81,100 @@ async def handler(message: Message):
             API_URL,
             params={"key": API_KEY, "search": message.text}
         ) as resp:
-            data = await resp.json()
+
+            # защита от 429 / html
+            try:
+                data = await resp.json()
+            except:
+                await message.answer("❌ API не ответило JSON (429/ошибка)")
+                return
 
     if not data.get("success"):
         await message.answer("❌ Ничего не найдено")
         return
 
     search = data.get("search", "—")
-    detected = data.get("detected_type", "unknown")
-    results_count = data.get("results_count", 0)
-    sources_count = data.get("sources_count", 0)
-    time = data.get("search_time", "—")
+    detected = data.get("detected_type", "—")
 
     fast = data.get("fast-result", {})
+    full = data.get("full-result", {})
+
+    # --------- базовые поля ---------
     country = "—"
     region = "—"
+    email = "—"
+    phone = "—"
+    fullname = "—"
 
-    if isinstance(fast.get("country"), list) and fast["country"]:
-        country = fast["country"][0][1]
+    def extract(obj):
+        nonlocal country, region, email, phone, fullname
 
-    if isinstance(fast.get("region"), list) and fast["region"]:
-        region = fast["region"][0][1]
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                extract(v)
 
+        elif isinstance(obj, list):
+            for i in obj:
+                extract(i)
+
+        elif isinstance(obj, str):
+            val = obj.strip()
+
+            if "@" in val:
+                email = val
+            elif val.startswith("+") or val.isdigit():
+                phone = val
+            elif val.lower() in ["россия", "russia"]:
+                country = val
+            elif "европа" in val.lower() or "регион" in val.lower():
+                region = val
+            elif len(val.split()) <= 3:
+                fullname = val
+
+    extract(fast)
+
+    # --------- результат ---------
     text = (
         f"📊 <b>Результат поиска</b>\n\n"
         f"🔎 <b>Запрос:</b> <code>{search}</code>\n"
         f"📌 <b>Тип:</b> {detected}\n\n"
         f"🌍 <b>Страна:</b> {country}\n"
         f"🗺 <b>Регион:</b> {region}\n\n"
-        f"📦 <b>Результатов:</b> {results_count}\n"
-        f"📚 <b>Источников:</b> {sources_count}\n"
-        f"⏱ <b>Время:</b> {time}s\n"
+        f"📧 <b>Email:</b> {email}\n"
+        f"📞 <b>Телефон:</b> {phone}\n"
+        f"👤 <b>Имя:</b> {fullname}\n"
     )
 
-    full = data.get("full-result", {})
-    dbs = full.get("Базовая информация", [])
+    # --------- чистый full-result (без бд-шумa) ---------
+    values = set()
 
-    if not isinstance(dbs, list):
-        dbs = []
+    def collect(obj):
+        if isinstance(obj, dict):
+            for v in obj.values():
+                collect(v)
+        elif isinstance(obj, list):
+            for i in obj:
+                collect(i)
+        else:
+            s = str(obj).strip()
 
-    seen = set()
-    count = 0
+            # фильтр мусора
+            if any(x in s.lower() for x in ["source", "info_leak", "database"]):
+                return
 
-    text += "\n📁 <b>Результаты:</b>\n"
+            if len(s) > 2:
+                values.add(s)
 
-    for db in dbs:
-        if not isinstance(db, dict):
-            continue
+    collect(full)
 
-        info = db.get("info_leak", "")
-        clean = clean_text(info)
+    if values:
+        text += "\n📁 <b>Данные:</b>\n"
+        for v in list(values)[:15]:  # ограничение
+            text += f"• {v}\n"
 
-        if not clean:
-            continue
-        if "No results found" in clean:
-            continue
-        if clean in seen:
-            continue
-
-        seen.add(clean)
-        count += 1
-
-        text += f"\n{clean}\n"
-
-        if count >= 10:
-            break
-
-    # защита от лимита Telegram
-    def split_text(txt, limit=3500):
-        parts = []
-        while len(txt) > limit:
-            cut = txt.rfind("\n", 0, limit)
-            if cut == -1:
-                cut = limit
-            parts.append(txt[:cut])
-            txt = txt[cut:]
-        parts.append(txt)
-        return parts
-
-    for part in split_text(text):
-        await message.answer(part, parse_mode="HTML")
+    # --------- защита от лимита telegram ---------
+    for i in range(0, len(text), 3500):
+        await message.answer(text[i:i+3500], parse_mode="HTML")
         
 @router.callback_query(F.data == "checksub")
 async def checksub(callback: CallbackQuery):
