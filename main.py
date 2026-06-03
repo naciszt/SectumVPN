@@ -469,7 +469,7 @@ def main_keyboard(uid: int):
     kb.button(text="👤 Профиль",       callback_data="menu_profile")
     kb.button(text="👨‍💻 Пожаловаться на баг",    callback_data="menu_creator")
     kb.button(text="🪞 Создать зеркало", callback_data="menu_mirror")
-    if is_admin(uid):
+    await if is_admin(uid):
         kb.button(text="⚙️ Админ панель", callback_data="admin_panel")
     kb.adjust(2, 2, 1) if is_admin(uid) else kb.adjust(2, 1, 1)
     return kb.as_markup()
