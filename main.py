@@ -233,9 +233,6 @@ admin_state:      dict[int, str] = {}   # uid -> pending action
 def esc(v) -> str:
     return html_module.escape(str(v) if v is not None else "")
 
-def is_admin(uid: int) -> bool:
-    return uid in ADMIN_IDS
-
 _main_bot_ref: Bot | None = None
 
 async def checksubi(user_id: int) -> bool:
@@ -298,20 +295,9 @@ def text_report(data: dict, query: str, search_type: str) -> str:
     lines = []
 
     # HEADER
-    lines.append("╔══════════════════════╗")
-    lines.append("      🔍 KILD0XER REPORT")
-    lines.append("╚══════════════════════╝\n")
-
-    lines.append(f"📌 Запрос: {query}")
-    lines.append(f"🧠 Тип: {detected}")
-    lines.append(f"📊 Результатов: {results_count}")
-    lines.append(f"📚 Источников: {sources_count}")
-    lines.append(f"⏱ Время: {search_time}\n")
-
-    # FAST DATA
-    lines.append("⚡ БЫСТРЫЕ ДАННЫЕ")
-    lines.append("────────────────────")
-
+    
+    lines.append("      🔍 KILD0XER ")
+    
     def add_block(label, value):
         if value:
             lines.append(f"{label}: {', '.join(value)}")
@@ -329,48 +315,24 @@ def text_report(data: dict, query: str, search_type: str) -> str:
         if cleaned:
             lines.append(f"{k}: {cleaned}")
 
-    # BASE INFO
-    lines.append("\n📍 БАЗОВАЯ ИНФОРМАЦИЯ")
-    lines.append("────────────────────")
-    if base_info:
-        for k, v in base_info.items():
-            cleaned = clean_value(v)
-            if cleaned:
-                lines.append(f"{k}: {cleaned}")
-    else:
-        lines.append("Нет данных")
-
-    # DATABASE LEAKS
-    lines.append("\n📦 БАЗЫ ДАННЫХ")
-    lines.append("────────────────────")
-
     if dbs:
         for idx, db in enumerate(dbs, 1):
             if not isinstance(db, dict):
                 continue
 
-            source = clean_value(
-                db.get("source") or db.get("database") or db.get("name") or f"Источник {idx}"
-            )
-
-            lines.append(f"\n🔹 {idx}. {source}")
+            
 
             has_data = False
-            for k, v in db.items():
-                if k in ("source", "database", "db"):
-                    continue
-                cleaned = clean_value(v)
-                if cleaned:
-                    lines.append(f"   • {k}: {cleaned}")
-                    has_data = True
+            if cleaned:
+                lines.append(f"• {k}: {cleaned}")
+                has_data = True
 
             if not has_data:
                 lines.append("   (пусто)")
     else:
         lines.append("Нет записей")
 
-    lines.append("\n────────────────────")
-    lines.append("🤖 KilD0xer OSINT Engine")
+    lines.append('🤖 3E₽K@Lа ТУТ - <a href="t.me/kildoxer">CLICK</a>')
 
     return "\n".join(lines)
 def build_html_report(data: dict, query: str, search_type: str) -> str:
@@ -619,7 +581,7 @@ def make_router(is_mirror: bool = False) -> Router:
     async def menu_profile(callback: CallbackQuery):
         await callback.answer()
         uid = callback.from_user.id
-        u = get_or_create_user(uid)
+        u = await get_or_create_user(uid)
         first   = u["first_seen"][:16].replace("T", " ") if u["first_seen"] else "—"
         last    = u["last_request"][:16].replace("T", " ") if u["last_request"] else "—"
         last_q  = esc(u["last_query"] or "—")
@@ -671,16 +633,15 @@ def make_router(is_mirror: bool = False) -> Router:
 
 
         mirrors = await get_mirrors()
-        existing = [m[0] for m in mirrors]  # token — первая колонка
-        await add_mirror_db(token, label)
+        existing = [m[0] for m in mirrors]
+
         if token in existing:
             await wait.edit_text("⚠️ Это зеркало уже добавлено.")
             return
 
         label = f"@{me.username}"
 
-        # Запускаем зеркало
-        await launch_mirror(token, label)
+        await add_mirror_db(token, label)
         await wait.edit_text(
             f"✅ Зеркало <b>{esc(label)}</b> запущено!\n"
             f"Бот: <a href='https://t.me/{me.username}'>{esc(label)}</a>",
