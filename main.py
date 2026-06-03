@@ -154,8 +154,22 @@ async def remove_limit(uid: int):
             (uid,)
         )
         await db.commit()
+async def fetch_user(uid: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("SELECT * FROM users WHERE id=?", (uid,))
+        row = await cur.fetchone()
 
-async def add_mirror(token: str, label: str):
+        if not row:
+            return None
+
+        return {
+            "id": row[0],
+            "requests": row[1],
+            "first_seen": row[2],
+            "last_request": row[3],
+            "last_query": row[4],
+        }
+async def add_mirror_db(token: str, label: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             INSERT OR REPLACE INTO mirrors(token, label, status, last_start)
@@ -586,7 +600,7 @@ def make_router(is_mirror: bool = False) -> Router:
         last    = u["last_request"][:16].replace("T", " ") if u["last_request"] else "—"
         last_q  = esc(u["last_query"] or "—")
         req_cnt = u["requests"]
-        lim     = get_limit(uid)
+        lim     = await get_limit(uid)
         lim_str = "♾ Безлимит" if lim is None else str(lim)
 
         logs_text = "".join(f"\n  • {log}" for log in reversed(u["logs"][-5:]))
