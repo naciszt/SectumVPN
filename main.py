@@ -912,6 +912,7 @@ def make_router(is_mirror: bool = False) -> Router:
                     )
                 except ValueError:
                    await message.answer("❌ Неверный ID")
+    return r
 
 
 
