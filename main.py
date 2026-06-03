@@ -55,6 +55,9 @@ async def init_db():
         """)
         await db.commit()
 
+def is_admin(uid: int) -> bool:
+    return uid in ADMIN_IDS
+    
 async def start_all_mirrors():
     mirrors = await get_mirrors()
     for token, label, status, _ in mirrors:
@@ -469,7 +472,7 @@ def main_keyboard(uid: int):
     kb.button(text="👤 Профиль",       callback_data="menu_profile")
     kb.button(text="👨‍💻 Пожаловаться на баг",    callback_data="menu_creator")
     kb.button(text="🪞 Создать зеркало", callback_data="menu_mirror")
-    if await is_admin(uid):
+    if is_admin(uid):
         kb.button(text="⚙️ Админ панель", callback_data="admin_panel")
     kb.adjust(2, 2, 1) if is_admin(uid) else kb.adjust(2, 1, 1)
     return kb.as_markup()
