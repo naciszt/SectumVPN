@@ -2,83 +2,264 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-html, body {
-    height: 100%;
-    background: black;
     font-family: Arial, sans-serif;
-    overflow: hidden;
 }
 
-.stars, .twinkling {
+header {
     position: fixed;
-    inset: 0;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 90%;
+    max-width: 900px;
+    height: 50px;
+    padding: 20px 30px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,0.22),
+            rgba(255,255,255,0.08)
+        );
+
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+
+    border: 1px solid rgba(255,255,255,0.18);
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.25),
+        inset 0 1px 1px rgba(255,255,255,0.35),
+        inset 0 -1px 1px rgba(255,255,255,0.05);
+
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.logo {
+    margin-top: 5px;
+}
+
+nav a:hover {
+    opacity: 1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+nav svg {
+    display: block;
+} 
+
+.burger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.burger span {
+    width: 25px;
+    height: 2px;
+    background: white;
+}
+
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
-}
+    height: 100vh;
 
-.stars {
-    background: #000 url(https://i.postimg.cc/hhFD7Nkf/apps-47636-13819498107583324-fb06b53a-4974-4acb-85e6-f6f363f85ab6-edec48d0-ec35-4a1f-8bf5-c455987b4a.png) repeat;
-    z-index: 0;
-}
-
-.twinkling {
-    background: url(https://i.postimg.cc/CLpNr4PF/twinkling.png);
-    animation: moveStars 8s linear infinite;
+    background: #111;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 1;
+    gap: 40px;
+
+    transform: translateY(-100%);
+    transition: 0.4s;
 }
 
-@keyframes moveStars {
-    from { background-position: 0 0; }
-    to { background-position: -1000px 500px; }
+.mobile-menu.active {
+    transform: translateY(0);
 }
 
-h1 {
-    color: white;
-    font-size: clamp(28px, 5vw, 48px);
-    text-shadow: 0 0 20px rgba(255,255,255,0.4);
-}
-
-h3 {
-    color: rgba(255,255,255,0.7);
-    font-size: clamp(14px, 2.5vw, 18px);
-    margin-top: 10px;
-    text-align: center;
-}
-
-.btn {
-    margin-top: 30px;
-    padding: 10px 20px;
+.mobile-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
     color: white;
     text-decoration: none;
+}
+
+.stars, .twinkling {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.stars {
+  background:#000 url(https://i.postimg.cc/hhFD7Nkf/apps-47636-13819498107583324-fb06b53a-4974-4acb-85e6-f6f363f85ab6-edec48d0-ec35-4a1f-8bf5-c455987b4a.png) repeat top center;
+  z-index: 0;
+}
+
+.twinkling {
+  background-image: url(https://i.postimg.cc/CLpNr4PF/twinkling.png);
+  animation: 3s twinkle infinite;
+  animation-timing-function: linear;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.twinkling h1 {
+  position: relative;
+  z-index: 5;
+  color: white;
+  font-size: 48px;
+  text-align: center;
+  margin-top: 250px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(255,255,255,0.6);
+}
+.twinkling h3 {
+  position: relative;
+  z-index: 5;
+  color: white;
+  font-size: 20px;
+  text-align: center;
+  margin-top: 10px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px rgba(255,255,255,0.6);
+}
+@keyframes twinkle {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: -100px 0;
+  }
+}
+
+button {
+	position: relative;
+	z-index: 5;
+	font-size 40px;
+	text-align: center;
+	margin-top: 30px;
+	letter-spacing: 1px;
+	text-shadow: 0 0 20px rgba(255,255,255,0.6);
+}
+.gashishknopka {
+    position: relative;
+    overflow: hidden;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 40px;
+    width: 130px;
+    padding: 0;
+
+    font-size: 16px;
+    text-decoration: none;
     text-transform: lowercase;
-    border: 1px solid rgba(255,255,255,0.4);
+    font-weight: lighter;
+
+    color: #fff;
+
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.6);
     border-radius: 10px;
-    background: rgba(0,0,0,0.6);
+
+    text-shadow: 0 0 10px rgba(255,255,255,0.4);
+
+    box-shadow:
+        0 0 10px rgba(255,255,255,0.12),
+        0 10px 25px rgba(0,0,0,0.4);
+
     backdrop-filter: blur(8px);
-    transition: 0.2s ease;
-    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    -webkit-backdrop-filter: blur(8px);
+
+    transition: transform 0.15s ease, box-shadow 0.25s ease;
+    will-change: transform;
 }
 
-.btn:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 0 25px rgba(255,255,255,0.2);
+/* hover */
+.gashishknopka:hover {
+    transform: translateY(-2px) scale(1.02);
+
+    box-shadow:
+        0 0 18px rgba(255,255,255,0.25),
+        0 0 40px rgba(255,255,255,0.10),
+        0 12px 30px rgba(0,0,0,0.5);
 }
 
-.btn:active {
-    transform: scale(0.97);
+/* click */
+.gashishknopka:active {
+    transform: translateY(1px) scale(0.97);
+
+    box-shadow:
+        0 0 8px rgba(255,255,255,0.15),
+        0 8px 18px rgba(0,0,0,0.5);
 }
 
-footer {
-    position: fixed;
-    bottom: 10px;
+/* ссылка внутри кнопки */
+.gashishknopka a {
+    color: white;
+    text-decoration: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+}
+
+.copyright, footer {
+    position: absolute;
+    bottom: 15px;
     width: 100%;
     text-align: center;
-    color: rgba(255,255,255,0.5);
+
+    color: rgba(255,255,255,0.6);
     font-size: 12px;
+    letter-spacing: 0.5px;
+
+    text-shadow: 0 0 8px rgba(255,255,255,0.08);
+}
+.gashishknopka a,
+.gashishknopka a:visited,
+.gashishknopka a:hover,
+.gashishknopka a:active {
+    color: #fff !important;
+    text-decoration: none;
+}
+
+.gashishknopka a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
