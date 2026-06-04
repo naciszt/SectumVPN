@@ -51,10 +51,6 @@ nav a:hover {
     opacity: 1;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 nav svg {
     display: block;
 } 
@@ -72,61 +68,54 @@ nav svg {
     background: white;
 }
 
-.mobile-menu {
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: black;
+    overflow-x: hidden;
+	scroll-behavior: smooth;
+}
+
+.stars {
     position: fixed;
     top: 0;
     left: 0;
+
     width: 100%;
     height: 100vh;
 
-    background: #111;
+    background: #000 url(https://i.postimg.cc/hhFD7Nkf/apps-47636-13819498107583324-fb06b53a-4974-4acb-85e6-f6f363f85ab6-edec48d0-ec35-4a1f-8bf5-c455987b4a.png) repeat top center;
+
+    z-index: 0;
+}
+
+.twinkling {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100vh;
+
+    background-image: url(https://i.postimg.cc/CLpNr4PF/twinkling.png);
+    animation: twinkle 3s linear infinite;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 40px;
 
-    transform: translateY(-100%);
-    transition: 0.4s;
+    z-index: 1;
 }
 
-.mobile-menu.active {
-    transform: translateY(0);
-}
-
-.mobile-menu a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    color: white;
-    text-decoration: none;
-}
-
-.stars, .twinkling {
-  position:absolute;
-  top:0;
-  left:0;
-  right:0;
-  bottom:0;
-  width:100%;
-  height:100%;
-  display:block;
-}
-
-.stars {
-  background:#000 url(https://i.postimg.cc/hhFD7Nkf/apps-47636-13819498107583324-fb06b53a-4974-4acb-85e6-f6f363f85ab6-edec48d0-ec35-4a1f-8bf5-c455987b4a.png) repeat top center;
-  z-index: 0;
-}
-
-.twinkling {
-  background-image: url(https://i.postimg.cc/CLpNr4PF/twinkling.png);
-  animation: 3s twinkle infinite;
-  animation-timing-function: linear;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+@keyframes twinkle {
+    from {
+        background-position: 0 0;
+    }
+    to {
+        background-position: -100px 0;
+    }
 }
 
 .twinkling h1 {
@@ -149,15 +138,7 @@ nav svg {
   letter-spacing: 1px;
   text-shadow: 0 0 20px rgba(255,255,255,0.6);
 }
-@keyframes twinkle {
-  from {
-    background-position: 0 0;
-  }
 
-  to {
-    background-position: -100px 0;
-  }
-}
 
 button {
 	position: relative;
@@ -204,7 +185,6 @@ button {
     will-change: transform;
 }
 
-/* hover */
 .gashishknopka:hover {
     transform: translateY(-2px) scale(1.02);
 
@@ -214,8 +194,7 @@ button {
         0 12px 30px rgba(0,0,0,0.5);
 }
 
-/* click */
-.gashishknopka:active {
+.buttonsectum:active {
     transform: translateY(1px) scale(0.97);
 
     box-shadow:
@@ -223,8 +202,7 @@ button {
         0 8px 18px rgba(0,0,0,0.5);
 }
 
-/* ссылка внутри кнопки */
-.gashishknopka a {
+.buttonsectum a {
     color: white;
     text-decoration: none;
 
@@ -248,16 +226,13 @@ button {
 
     text-shadow: 0 0 8px rgba(255,255,255,0.08);
 }
-.gashishknopka a,
-.gashishknopka a:visited,
-.gashishknopka a:hover,
-.gashishknopka a:active {
+.buttonsectum a,
+.buttonsectum a:visited,
+.buttonsectum a:hover,
+.buttonsectum a:active {
     color: #fff !important;
     text-decoration: none;
-}
-
-.gashishknopka a {
-    display: flex;
+	display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
