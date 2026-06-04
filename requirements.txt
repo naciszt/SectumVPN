@@ -1,5 +1,0 @@
-aiogram
-aiohttp
-aiosqlite
-requests
-asyncio
