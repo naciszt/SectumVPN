@@ -184,18 +184,6 @@ button {
     height: 100%;
 }
 
-.copyright, footer {
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
-    text-align: center;
-
-    color: rgba(255,255,255,0.6);
-    font-size: 12px;
-    letter-spacing: 0.5px;
-
-    text-shadow: 0 0 8px rgba(255,255,255,0.08);
-}
 .gashishknopka a,
 .gashishknopka a:visited,
 .gashishknopka a:hover,
@@ -210,7 +198,8 @@ button {
     justify-content: center;
     width: 100%;
     height: 100%;
-}.copyright-top {
+}
+.copyright {
     position: absolute;
     top: 20px;
     width: 100%;
@@ -223,4 +212,68 @@ button {
     text-shadow: 0 0 8px rgba(255,255,255,0.1);
 }
 
+.svg-btn {
 
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    padding: 10px 18px;
+
+    color: white;
+
+    text-decoration: none;
+
+    text-transform: lowercase;
+
+    background: rgba(0,0,0,0.7);
+
+    border: 1px solid rgba(255,255,255,0.4);
+
+    border-radius: 10px;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow:
+
+        0 0 15px rgba(255,255,255,0.1),
+
+        0 10px 25px rgba(0,0,0,0.4);
+
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+
+}
+
+.svg-btn:hover {
+
+    transform: translateY(-2px) scale(1.03);
+
+    box-shadow: 0 0 25px rgba(255,255,255,0.25);
+
+}
+
+.svg-btn:active {
+
+    transform: scale(0.97);
+
+}
+
+.svg-btn img {
+
+    width: 16px;
+
+    height: 16px;
+
+    transition: transform 0.3s ease;
+
+}
+
+.svg-btn:hover img {
+
+    transform: translateX(4px);
+
+}
