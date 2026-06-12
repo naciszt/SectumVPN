@@ -11,19 +11,32 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
 :root{
-  --bg:#08090f;
-  --card:rgba(255,255,255,0.045);
-  --border:rgba(255,255,255,0.09);
-  --red:#ff4f6a;
+  --bg:#060810;
+  --bg2:#0a0c14;
+  --card:rgba(255,255,255,0.035);
+  --card2:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.14);
+  --red:#ff3d5a;
+  --red-glow:rgba(255,61,90,0.25);
+  --green:#00e5a0;
+  --green-glow:rgba(0,229,160,0.2);
+  --white-glow:rgba(255,255,255,0.12);
+  --text-dim:rgba(255,255,255,0.38);
+  --text-mid:rgba(255,255,255,0.65);
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
-  --fh:62px;
+  --fh:64px;
+  --radius:20px;
+  --radius-sm:12px;
 }
+
 html{height:100%;overflow:hidden;}
 body{
   font-family:'Space Grotesk',-apple-system,sans-serif;
@@ -31,284 +44,646 @@ body{
   height:100%;overflow:hidden;
   position:fixed;width:100%;top:0;left:0;
 }
-.shell{display:flex;flex-direction:column;height:100%;width:100%;max-width:500px;margin:0 auto;}
+
+/* ── BACKGROUNDS ── */
+.bg-noise{
+  position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:180px 180px;
+}
+.bg-gradient{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 45% at 50% -5%, rgba(255,255,255,0.06) 0%, transparent 70%);
+}
+.bg-bottom-glow{
+  position:fixed;bottom:-100px;left:50%;transform:translateX(-50%);
+  width:400px;height:200px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse, rgba(255,255,255,0.025) 0%, transparent 70%);
+}
+
+/* Grid lines */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+}
+
+/* ── LAYOUT ── */
+.shell{display:flex;flex-direction:column;height:100%;width:100%;max-width:480px;margin:0 auto;position:relative;}
 .content-wrap{
   flex:1;overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain none;
-  padding-top:var(--safe-top);padding-bottom:12px;
+  padding-top:var(--safe-top);padding-bottom:16px;
   scrollbar-width:none;-ms-overflow-style:none;
+  position:relative;z-index:1;
 }
 .content-wrap::-webkit-scrollbar{display:none;}
 
-.bg-grid{
-  position:fixed;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
-  background-size:40px 40px;
+.section{display:none;animation:fadeUp .22s ease both;}
+.section.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 16px 12px;position:relative;z-index:2;
 }
-.bg-orb{
-  position:fixed;top:-80px;left:50%;transform:translateX(-50%);
-  width:340px;height:260px;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse,rgba(255,255,255,0.04) 0%,transparent 70%);
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(255,255,255,0.9),rgba(255,255,255,0.6));
+  display:grid;place-items:center;font-size:16px;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.4);
+  flex-shrink:0;
+}
+.logo-name{font-size:16px;font-weight:700;letter-spacing:-0.5px;}
+.logo-name span{color:var(--text-dim);font-weight:400;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.protocol-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
+  padding:4px 10px;border-radius:30px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);
+  color:var(--text-dim);letter-spacing:.4px;
+  text-transform:uppercase;
 }
 
-.section{display:none;}.section.active{display:block;}
-
-/* header */
-.header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px;position:relative;z-index:1;}
-.logo{display:flex;align-items:center;gap:8px;}
-.logo-icon{width:28px;height:28px;border-radius:8px;background:#fff;display:grid;place-items:center;font-size:15px;box-shadow:0 0 12px rgba(255,255,255,0.18);flex-shrink:0;}
-.logo-name{font-size:15px;font-weight:700;letter-spacing:-0.3px;}
-.logo-name span{color:rgba(255,255,255,0.4);}
-.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:rgba(255,255,255,0.35);}
-
-/* card */
-.card{margin:8px 12px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--border);position:relative;z-index:1;}
-
-/* hero */
-.hero{text-align:center;padding:10px 16px 6px;position:relative;z-index:1;}
-.lock-ring{position:relative;width:70px;height:70px;margin:0 auto 9px;}
-.lock-ring svg{position:absolute;inset:0;width:100%;height:100%;animation:spin 12s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.lock-inner{
-  position:absolute;inset:10px;border-radius:50%;
-  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-  display:grid;place-items:center;font-size:24px;
-  transition:background .5s,border-color .5s,box-shadow .5s;
+/* ── HERO ── */
+.hero{
+  text-align:center;padding:4px 20px 16px;
+  position:relative;z-index:1;
 }
-.lock-inner.protected{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.28);box-shadow:0 0 22px rgba(255,255,255,0.09);}
-.lock-inner.danger{box-shadow:0 0 20px rgba(255,79,106,0.18);}
-.hero-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);margin-bottom:7px;}
-.ip-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:30px;background:rgba(255,255,255,0.05);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.5);}
-.ip-dot{width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);flex-shrink:0;transition:background .4s,box-shadow .4s;}
-.ip-dot.on{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.55);}
 
-/* map */
-.map-wrap{border-radius:14px;overflow:hidden;margin-top:10px;position:relative;}
-#map{height:170px;display:block;}
-.map-vig{position:absolute;inset:0;border-radius:14px;box-shadow:inset 0 0 36px rgba(8,9,15,0.6);pointer-events:none;}
+/* Status orb */
+.orb-wrap{
+  position:relative;width:110px;height:110px;margin:0 auto 14px;
+}
 
-/* status */
-.status-row{display:flex;align-items:center;gap:7px;font-size:11px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.45);margin-bottom:10px;}
-.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);flex-shrink:0;animation:blink 1.5s ease-in-out infinite;transition:background .4s,box-shadow .4s;}
-.pulse-dot.on{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.5);animation:none;}
-@keyframes blink{50%{opacity:.2;}}
+/* Multiple rotating rings */
+.orb-ring{
+  position:absolute;inset:0;border-radius:50%;
+}
+.orb-ring-1{
+  border:1px solid rgba(255,255,255,0.06);
+  animation:spin1 18s linear infinite;
+}
+.orb-ring-1::before{
+  content:'';position:absolute;top:-3px;left:calc(50% - 3px);
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,0.5);
+  box-shadow:0 0 8px rgba(255,255,255,0.6);
+}
+.orb-ring-2{
+  inset:12px;
+  border:1px dashed rgba(255,255,255,0.08);
+  animation:spin1 28s linear infinite reverse;
+}
+.orb-ring-3{
+  inset:24px;
+  border:1px solid rgba(255,255,255,0.05);
+  animation:spin1 8s linear infinite;
+}
+@keyframes spin1{to{transform:rotate(360deg);}}
 
-/* connect button */
+/* Center */
+.orb-center{
+  position:absolute;inset:18px;border-radius:50%;
+  display:grid;place-items:center;
+  font-size:28px;
+  background:radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  border:1px solid rgba(255,255,255,0.1);
+  transition:all .6s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter:blur(4px);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.orb-center.connected{
+  background:radial-gradient(circle, var(--green-glow) 0%, rgba(0,229,160,0.04) 100%);
+  border-color:rgba(0,229,160,0.4);
+  box-shadow:0 0 30px var(--green-glow), 0 0 60px rgba(0,229,160,0.08), inset 0 1px 0 rgba(0,229,160,0.2);
+}
+.orb-center.danger{
+  box-shadow:0 0 20px var(--red-glow), inset 0 1px 0 rgba(255,61,90,0.1);
+}
+
+/* Pulse ring when connected */
+.orb-pulse{
+  position:absolute;inset:14px;border-radius:50%;
+  border:1px solid var(--green);opacity:0;
+  animation:none;
+}
+.orb-pulse.active{animation:pulse-ring 2.5s ease-out infinite;}
+@keyframes pulse-ring{
+  0%{transform:scale(1);opacity:.5;}
+  100%{transform:scale(1.35);opacity:0;}
+}
+
+.hero-status{
+  font-size:18px;font-weight:700;letter-spacing:-.4px;margin-bottom:6px;
+  transition:color .4s;
+}
+.hero-status.connected{color:var(--green);}
+.hero-status.danger{color:rgba(255,255,255,0.9);}
+
+.ip-row{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 14px;border-radius:30px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--text-dim);
+}
+.ip-indicator{
+  width:6px;height:6px;border-radius:50%;flex-shrink:0;
+  background:var(--red);box-shadow:0 0 6px var(--red);
+  transition:all .5s;
+}
+.ip-indicator.on{background:var(--green);box-shadow:0 0 8px var(--green);}
+
+/* ── MAP ── */
+.map-card{
+  margin:0 12px 8px;border-radius:var(--radius);
+  overflow:hidden;position:relative;z-index:1;
+  border:1px solid var(--border);
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+#map{height:190px;display:block;}
+
+/* Leaflet dark override */
+.leaflet-tile-pane{filter:saturate(0.3) brightness(0.85);}
+
+.map-overlay{
+  position:absolute;inset:0;border-radius:var(--radius);
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(6,8,16,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(6,8,16,0.7) 0%, transparent 50%),
+    linear-gradient(to right, rgba(6,8,16,0.55) 0%, transparent 30%, transparent 70%, rgba(6,8,16,0.55) 100%);
+}
+.map-scan{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:var(--radius);
+}
+.map-scan-line{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.06) 30%,rgba(255,255,255,0.12) 50%,rgba(255,255,255,0.06) 70%,transparent 100%);
+  animation:scan 4s ease-in-out infinite;top:0;
+}
+@keyframes scan{0%,100%{top:0%;opacity:0;}10%{opacity:1;}90%{opacity:.5;}to{top:100%;}}
+
+/* Map labels */
+.map-label-srv{
+  position:absolute;bottom:8px;right:10px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:rgba(255,255,255,0.35);letter-spacing:.5px;
+  text-transform:uppercase;pointer-events:none;
+}
+.map-status-chip{
+  position:absolute;top:10px;left:10px;
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;
+  background:rgba(6,8,16,0.7);border:1px solid var(--border2);
+  backdrop-filter:blur(8px);
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:var(--text-dim);letter-spacing:.4px;
+  pointer-events:none;
+}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);transition:all .4s;flex-shrink:0;}
+.chip-dot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+
+/* ── CONNECT CARD ── */
+.connect-card{
+  margin:0 12px 8px;padding:16px;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--border);
+  position:relative;z-index:1;overflow:hidden;
+}
+.connect-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+.connection-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.conn-left{display:flex;align-items:center;gap:8px;}
+.status-indicator{
+  display:flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);
+}
+.pulse-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--red);box-shadow:0 0 6px var(--red);
+  flex-shrink:0;animation:blink 2s ease-in-out infinite;
+  transition:all .4s;
+}
+.pulse-dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:none;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+.server-tag{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:8px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);
+}
+
+/* Connect button */
 .btn-connect{
-  width:100%;padding:14px;border-radius:14px;border:none;
-  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;
-  cursor:pointer;background:#fff;color:#000;
-  box-shadow:0 0 18px rgba(255,255,255,0.14),0 3px 14px rgba(0,0,0,0.35);
-  transition:opacity .15s,transform .15s;
+  width:100%;padding:15px;border-radius:14px;border:none;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;letter-spacing:-.1px;
+  cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,255,255,0.8));
+  color:#060810;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.4), 0 0 30px rgba(255,255,255,0.06);
+  transition:opacity .15s,transform .15s,box-shadow .3s;
   -webkit-appearance:none;appearance:none;user-select:none;touch-action:manipulation;
 }
-.btn-connect:active{opacity:.82;transform:scale(0.98);}
-.btn-connect:disabled{opacity:.45;}
+.btn-connect::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15) 0%,transparent 60%);
+  pointer-events:none;
+}
+.btn-connect:active{opacity:.85;transform:scale(0.985);}
+.btn-connect:disabled{opacity:.4;cursor:not-allowed;}
+.btn-connect.loading{opacity:.6;cursor:not-allowed;}
+
 .btn-connect.disconnect{
-  background:linear-gradient(135deg,#ff4f6a,#ff9f43);color:#000;
-  box-shadow:0 0 18px rgba(255,79,106,0.28),0 3px 14px rgba(0,0,0,0.35);
+  background:linear-gradient(135deg,#ff4060,#ff6b35);color:#fff;
+  box-shadow:0 0 0 1px rgba(255,64,96,0.3), 0 4px 20px rgba(0,0,0,0.4), 0 0 30px rgba(255,64,96,0.15);
 }
 
-/* app row */
-.app-row{display:flex;gap:7px;margin-top:9px;}
+/* App buttons */
+.app-row{display:flex;gap:8px;margin-top:10px;}
 .btn-app{
-  flex:1;padding:9px 6px;border-radius:11px;border:1px solid var(--border);
-  background:rgba(255,255,255,0.04);
+  flex:1;padding:10px 6px 9px;border-radius:13px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
   font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;
-  color:rgba(255,255,255,0.7);cursor:pointer;touch-action:manipulation;
-  -webkit-appearance:none;appearance:none;user-select:none;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--text-mid);cursor:pointer;
+  touch-action:manipulation;-webkit-appearance:none;user-select:none;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:background .15s,border-color .15s;
 }
-.btn-app:active{opacity:.65;}
-.btn-app-icon{font-size:17px;line-height:1;}
-.btn-app-os{font-size:9px;color:rgba(255,255,255,0.35);font-family:'JetBrains Mono',monospace;}
+.btn-app:active{background:rgba(255,255,255,0.07);opacity:.8;}
+.btn-app-icon{font-size:18px;line-height:1;}
+.btn-app-name{font-size:11px;font-weight:600;}
+.btn-app-os{font-size:9px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
 
-/* QR */
-.qr-row{display:flex;align-items:center;gap:13px;}
-.qr-box{background:#fff;border-radius:12px;padding:9px;flex-shrink:0;box-shadow:0 0 14px rgba(255,255,255,0.1);}
-.qr-box canvas{display:block;}
-.qr-info{flex:1;min-width:0;}
-.qr-label{font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
-.qr-config{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.38);word-break:break-all;line-height:1.5;margin-bottom:8px;background:rgba(0,0,0,0.22);padding:6px 8px;border-radius:8px;border:1px solid var(--border);max-height:46px;overflow:hidden;}
-.btn-secondary{display:inline-block;padding:7px 13px;border-radius:10px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.65);-webkit-appearance:none;appearance:none;touch-action:manipulation;user-select:none;}
-.btn-secondary:active{opacity:.65;}
-
-/* ── INSTALL GUIDE ── */
+/* ── GUIDE CARD ── */
 .guide-card{
-  margin:8px 12px;border-radius:18px;
+  margin:0 12px 8px;border-radius:var(--radius);
   background:var(--card);border:1px solid var(--border);
   overflow:hidden;position:relative;z-index:1;
 }
 .guide-tabs{display:flex;border-bottom:1px solid var(--border);}
 .gtab{
-  flex:1;padding:11px 8px;text-align:center;
-  font-size:12px;font-weight:600;color:rgba(255,255,255,0.38);
+  flex:1;padding:12px 8px;text-align:center;
+  font-size:12px;font-weight:600;color:var(--text-dim);
   cursor:pointer;touch-action:manipulation;user-select:none;
-  transition:color .2s,background .2s;
-  border-bottom:2px solid transparent;
+  transition:color .2s;border-bottom:2px solid transparent;
 }
-.gtab.active{color:#fff;border-bottom-color:#fff;}
-
-.guide-body{padding:14px;}
-.guide-step{
-  display:flex;align-items:flex-start;gap:11px;
-  margin-bottom:14px;
-}
+.gtab.active{color:#fff;border-bottom-color:rgba(255,255,255,0.6);}
+.guide-body{padding:16px 14px;}
+.guide-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
 .guide-step:last-child{margin-bottom:0;}
 .step-num{
-  width:24px;height:24px;border-radius:50%;
-  background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.12);
-  display:grid;place-items:center;flex-shrink:0;
-  font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;
-  color:rgba(255,255,255,0.7);
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
+  display:grid;place-items:center;
+  font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  color:rgba(255,255,255,0.6);margin-top:1px;
 }
-.step-text{font-size:12px;color:rgba(255,255,255,0.7);line-height:1.55;padding-top:3px;}
+.step-text{font-size:12px;color:var(--text-mid);line-height:1.6;padding-top:2px;}
 .step-text b{color:#fff;font-weight:600;}
-.step-icon{font-size:15px;}
 
-/* servers */
-.srv-card{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;touch-action:manipulation;user-select:none;transition:border-color .2s;}
+/* ── QR CARD ── */
+.qr-card{
+  margin:0 12px 8px;padding:16px;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--border);
+  position:relative;z-index:1;
+}
+.qr-row{display:flex;align-items:center;gap:14px;}
+.qr-box{
+  background:#fff;border-radius:14px;padding:10px;flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.4);
+}
+.qr-box canvas{display:block;border-radius:4px;}
+.qr-info{flex:1;min-width:0;}
+.qr-label{
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;
+}
+.qr-config{
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.3);
+  word-break:break-all;line-height:1.5;margin-bottom:10px;
+  background:rgba(0,0,0,0.3);padding:7px 9px;border-radius:10px;
+  border:1px solid var(--border);max-height:48px;overflow:hidden;
+}
+.btn-copy{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 13px;border-radius:10px;border:1px solid var(--border2);
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  cursor:pointer;background:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.7);
+  -webkit-appearance:none;touch-action:manipulation;user-select:none;
+  transition:background .15s;
+}
+.btn-copy:active{background:rgba(255,255,255,0.12);}
+
+/* ── SERVERS ── */
+.sec-header{
+  padding:18px 16px 4px;font-size:22px;font-weight:700;letter-spacing:-.5px;
+  position:relative;z-index:1;
+}
+.sec-sub{
+  padding:2px 16px 12px;font-size:10px;color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;position:relative;z-index:1;letter-spacing:.4px;
+}
+.srv-card{
+  margin:0 12px 8px;padding:15px;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;gap:13px;
+  cursor:pointer;touch-action:manipulation;user-select:none;
+  position:relative;z-index:1;
+  transition:border-color .25s,background .25s,box-shadow .25s;
+}
 .srv-card:active{opacity:.75;}
-.srv-card.selected{border-color:rgba(255,255,255,0.3);box-shadow:0 0 14px rgba(255,255,255,0.04);}
-.flag{font-size:22px;flex-shrink:0;}
-.srv-info{flex:1;}
-.srv-name{font-weight:600;font-size:13px;}
-.srv-sub{font-size:10px;color:rgba(255,255,255,0.35);font-family:'JetBrains Mono',monospace;margin-top:2px;}
-.srv-badge{font-size:9px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.07);border:1px solid var(--border);color:rgba(255,255,255,0.45);white-space:nowrap;}
-.ping-bar{display:flex;gap:3px;align-items:flex-end;flex-shrink:0;}
-.ping-bar span{width:4px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background .25s;}
-.srv-card.selected .ping-bar span{background:#fff;box-shadow:0 0 4px rgba(255,255,255,0.3);}
+.srv-card.selected{
+  border-color:rgba(255,255,255,0.22);
+  background:rgba(255,255,255,0.055);
+  box-shadow:0 0 20px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.flag{font-size:26px;flex-shrink:0;}
+.srv-info{flex:1;min-width:0;}
+.srv-name{font-weight:600;font-size:13px;margin-bottom:3px;}
+.srv-sub{
+  font-size:10px;color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.srv-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.srv-badge{
+  font-size:9px;font-family:'JetBrains Mono',monospace;
+  padding:2px 8px;border-radius:6px;
+  background:rgba(255,255,255,0.06);border:1px solid var(--border);
+  color:var(--text-dim);white-space:nowrap;letter-spacing:.3px;
+}
+.srv-card.selected .srv-badge{border-color:rgba(255,255,255,0.18);color:rgba(255,255,255,0.6);}
+.ping-bar{display:flex;gap:3px;align-items:flex-end;}
+.ping-bar span{
+  width:4px;border-radius:2px;
+  background:rgba(255,255,255,0.1);
+  transition:background .3s,box-shadow .3s;
+}
+.srv-card.selected .ping-bar span{background:#fff;box-shadow:0 0 4px rgba(255,255,255,0.4);}
+.ping-selected-dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:var(--green);box-shadow:0 0 8px var(--green);
+  display:none;
+}
+.srv-card.selected .ping-selected-dot{display:block;}
 
-/* settings */
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+/* ── SETTINGS ── */
+.settings-card{
+  margin:0 12px 8px;padding:2px 16px;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--border);
+  position:relative;z-index:1;
+}
+.set-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 0;border-bottom:1px solid var(--border);
+}
 .set-row:last-child{border-bottom:none;}
-.set-label{font-size:12px;color:rgba(255,255,255,0.68);}
-.set-val{font-family:'JetBrains Mono',monospace;font-size:10px;color:#fff;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);padding:3px 9px;border-radius:7px;}
-.toggle{width:38px;height:21px;border-radius:11px;background:rgba(255,255,255,0.08);border:1px solid var(--border);position:relative;cursor:pointer;touch-action:manipulation;flex-shrink:0;transition:background .25s,border-color .25s;}
-.toggle.on{background:#fff;border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.14);}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,0.4);transition:transform .25s,background .25s;}
-.toggle.on::after{background:#000;transform:translateX(17px);}
+.set-left{display:flex;flex-direction:column;gap:2px;}
+.set-label{font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;}
+.set-desc{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+.set-val{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.7);
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+  padding:4px 10px;border-radius:8px;white-space:nowrap;
+}
+.toggle{
+  width:42px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,0.06);border:1px solid var(--border2);
+  position:relative;cursor:pointer;touch-action:manipulation;flex-shrink:0;
+  transition:background .3s,border-color .3s,box-shadow .3s;
+}
+.toggle.on{
+  background:rgba(0,229,160,0.25);border-color:rgba(0,229,160,0.5);
+  box-shadow:0 0 10px rgba(0,229,160,0.15);
+}
+.toggle::after{
+  content:'';position:absolute;top:4px;left:4px;
+  width:14px;height:14px;border-radius:50%;
+  background:rgba(255,255,255,0.3);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),background .3s;
+}
+.toggle.on::after{background:var(--green);transform:translateX(18px);box-shadow:0 0 6px var(--green);}
 
-.sec-header{padding:16px 16px 4px;font-size:19px;font-weight:700;position:relative;z-index:1;}
-.sec-sub{padding:0 16px 10px;font-size:11px;color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace;position:relative;z-index:1;}
+.settings-section-title{
+  font-size:11px;font-family:'JetBrains Mono',monospace;
+  color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 0 2px;
+}
 
-/* footer */
-.footer{width:100%;height:calc(var(--fh) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(8,9,15,0.92);border-top:1px solid var(--border);display:flex;flex-shrink:0;position:relative;z-index:10;}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:rgba(255,255,255,0.26);cursor:pointer;touch-action:manipulation;user-select:none;font-family:'JetBrains Mono',monospace;transition:color .2s;}
-.tab-icon{font-size:18px;line-height:1;transition:filter .2s;}
-.tab.active{color:rgba(255,255,255,0.88);}
-.tab.active .tab-icon{filter:drop-shadow(0 0 4px rgba(255,255,255,0.4));}
+/* ── FOOTER ── */
+.footer{
+  width:100%;height:calc(var(--fh) + var(--safe-bottom));
+  background:rgba(6,8,16,0.88);
+  border-top:1px solid var(--border);
+  display:flex;flex-shrink:0;position:relative;z-index:10;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  padding-bottom:var(--safe-bottom);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10px;color:rgba(255,255,255,0.22);cursor:pointer;
+  touch-action:manipulation;user-select:none;font-family:'JetBrains Mono',monospace;
+  transition:color .2s;letter-spacing:.3px;
+}
+.tab-icon{font-size:19px;line-height:1;transition:filter .2s,transform .2s;}
+.tab.active{color:rgba(255,255,255,0.85);}
+.tab.active .tab-icon{
+  filter:drop-shadow(0 0 6px rgba(255,255,255,0.5));
+  transform:translateY(-1px);
+}
 
-/* toast */
-.toast{position:fixed;bottom:calc(var(--fh) + var(--safe-bottom) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 18px;border-radius:30px;opacity:0;pointer-events:none;z-index:999;white-space:nowrap;transition:opacity .25s,transform .25s;}
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:calc(var(--fh) + var(--safe-bottom) + 14px);left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:rgba(255,255,255,0.09);
+  border:1px solid rgba(255,255,255,0.14);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:9px 20px;border-radius:30px;
+  opacity:0;pointer-events:none;z-index:9999;
+  white-space:nowrap;
+  transition:opacity .25s,transform .25s;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:rgba(0,229,160,0.3);color:var(--green);}
+
+/* ── LEAFLET MARKERS ── */
+.custom-marker-server,.custom-marker-user{
+  display:flex;align-items:center;justify-content:center;
+}
+.marker-pulse-wrap{position:relative;width:20px;height:20px;}
+.marker-dot{
+  position:absolute;inset:4px;border-radius:50%;
+  background:#fff;box-shadow:0 0 8px rgba(255,255,255,0.7);
+}
+.marker-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.4);
+  animation:marker-pulse 2.5s ease-out infinite;
+}
+@keyframes marker-pulse{
+  0%{transform:scale(1);opacity:.7;}
+  100%{transform:scale(2.4);opacity:0;}
+}
+.marker-dot.green{background:var(--green);box-shadow:0 0 8px var(--green);}
+.marker-ring.green{border-color:rgba(0,229,160,0.5);}
+
+/* Connected status card */
+.conn-info-card{
+  margin:0 12px 8px;padding:12px 14px;border-radius:14px;
+  background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);
+  display:none;position:relative;z-index:1;
+  animation:fadeUp .3s ease;
+}
+.conn-info-card.visible{display:flex;align-items:center;gap:10px;}
+.conn-info-icon{font-size:18px;flex-shrink:0;}
+.conn-info-text{flex:1;}
+.conn-info-title{font-size:12px;font-weight:600;color:var(--green);margin-bottom:2px;}
+.conn-info-sub{font-size:10px;color:rgba(0,229,160,0.6);font-family:'JetBrains Mono',monospace;}
+
 </style>
 </head>
 <body>
 
+<div class="bg-noise"></div>
+<div class="bg-gradient"></div>
 <div class="bg-grid"></div>
-<div class="bg-orb"></div>
+<div class="bg-bottom-glow"></div>
 
 <div class="shell">
   <div class="content-wrap" id="contentWrap">
 
-    <!-- ═══ HOME ═══ -->
+    <!-- ═══════════ HOME ═══════════ -->
     <div id="home" class="section active">
 
+      <!-- Header -->
       <div class="header">
         <div class="logo">
-          <div class="logo-icon">🛡</div>
+          <div class="logo-icon">🛡️</div>
           <div class="logo-name">Sectum<span>VPN</span></div>
         </div>
-        <div class="badge">VLESS · REALITY</div>
+        <div class="header-right">
+          <div class="protocol-tag">VLESS · REALITY</div>
+        </div>
       </div>
 
-      <!-- HERO -->
+      <!-- Hero -->
       <div class="hero">
-        <div class="lock-ring">
-          <svg viewBox="0 0 70 70">
-            <circle cx="35" cy="35" r="30" fill="none"
-              stroke="rgba(255,255,255,0.17)" stroke-width="1"
-              stroke-dasharray="5 5" stroke-linecap="round"/>
-          </svg>
-          <div class="lock-inner danger" id="lockInner">🔓</div>
+        <div class="orb-wrap">
+          <div class="orb-ring orb-ring-1"></div>
+          <div class="orb-ring orb-ring-2"></div>
+          <div class="orb-ring orb-ring-3"></div>
+          <div class="orb-pulse" id="orbPulse"></div>
+          <div class="orb-center danger" id="orbCenter">🔓</div>
         </div>
-        <div class="hero-title" id="statusText">Вы не защищены</div>
-        <div class="ip-pill">
-          <div class="ip-dot" id="ipDot"></div>
-          <span id="ipInfo">Определяю IP...</span>
-        </div>
-      </div>
-
-      <!-- MAP -->
-      <div class="card">
-        <div class="map-wrap">
-          <div id="map"></div>
-          <div class="map-vig"></div>
+        <div class="hero-status danger" id="statusText">Не защищено</div>
+        <div class="ip-row" style="margin-top:8px;">
+          <div class="ip-indicator" id="ipIndicator"></div>
+          <span id="ipInfo" style="font-size:10px;">Определяю IP…</span>
         </div>
       </div>
 
-      <!-- CONNECT -->
-      <div class="card">
-        <div class="status-row">
-          <div class="pulse-dot" id="pulseDot"></div>
-          <span id="statusLabel">Disconnected</span>
+      <!-- Map -->
+      <div class="map-card">
+        <div id="map"></div>
+        <div class="map-overlay"></div>
+        <div class="map-scan"><div class="map-scan-line"></div></div>
+        <div class="map-status-chip">
+          <div class="chip-dot" id="chipDot"></div>
+          <span id="chipText">NO ROUTE</span>
+        </div>
+        <div class="map-label-srv" id="mapLabelSrv">USA · SRV-01</div>
+      </div>
+
+      <!-- Connected info (hidden by default) -->
+      <div class="conn-info-card" id="connInfoCard">
+        <div class="conn-info-icon">✅</div>
+        <div class="conn-info-text">
+          <div class="conn-info-title">Подключено</div>
+          <div class="conn-info-sub" id="connInfoSub">Трафик защищён</div>
+        </div>
+      </div>
+
+      <!-- Connect card -->
+      <div class="connect-card">
+        <div class="connection-meta">
+          <div class="status-indicator">
+            <div class="pulse-dot" id="pulseDot"></div>
+            <span id="statusLabel">Не подключено</span>
+          </div>
+          <div class="server-tag">
+            <span id="srvTagFlag">🇺🇸</span>
+            <span id="srvTagName">США · #1</span>
+          </div>
         </div>
         <button class="btn-connect" id="connectBtn" onclick="handleConnect()">Подключиться</button>
         <div class="app-row">
           <button class="btn-app" onclick="openInApp('v2ray')">
             <div class="btn-app-icon">📡</div>
-            v2rayNG
+            <div class="btn-app-name">v2rayNG</div>
             <div class="btn-app-os">Android</div>
           </button>
           <button class="btn-app" onclick="openInApp('happ')">
             <div class="btn-app-icon">📡</div>
-            Happ
+            <div class="btn-app-name">Happ</div>
             <div class="btn-app-os">iOS</div>
           </button>
           <button class="btn-app" onclick="openInApp('hiddify')">
             <div class="btn-app-icon">📡</div>
-            Hiddify
+            <div class="btn-app-name">Hiddify</div>
             <div class="btn-app-os">Android / iOS</div>
           </button>
         </div>
       </div>
 
-      <!-- INSTALL GUIDE -->
+      <!-- Install guide -->
       <div class="guide-card">
         <div class="guide-tabs">
           <div class="gtab active" id="gtab-ios" onclick="switchGuide('ios')">📱 iPhone</div>
           <div class="gtab" id="gtab-android" onclick="switchGuide('android')">🤖 Android</div>
         </div>
-
-        <!-- iOS -->
         <div class="guide-body" id="guide-ios">
           <div class="guide-step">
             <div class="step-num">1</div>
-            <div class="step-text">Открой этот сайт в <b>Safari</b> (именно Safari, не Chrome)</div>
+            <div class="step-text">Открой сайт в <b>Safari</b> — именно Safari, не Chrome</div>
           </div>
           <div class="guide-step">
             <div class="step-num">2</div>
-            <div class="step-text">Нажми кнопку <b>Поделиться</b> внизу экрана <span class="step-icon">⬆️</span></div>
+            <div class="step-text">Нажми <b>Поделиться</b> ⬆️ внизу экрана</div>
           </div>
           <div class="guide-step">
             <div class="step-num">3</div>
-            <div class="step-text">Прокрути вниз и выбери <b>«На экран Домой»</b> <span class="step-icon">➕</span></div>
+            <div class="step-text">Прокрути вниз → выбери <b>«На экран Домой»</b> ➕</div>
           </div>
           <div class="guide-step">
             <div class="step-num">4</div>
-            <div class="step-text">Нажми <b>Добавить</b> — иконка SectumVPN появится на рабочем столе</div>
+            <div class="step-text">Нажми <b>Добавить</b> — иконка появится на рабочем столе</div>
           </div>
           <div class="guide-step">
             <div class="step-num">5</div>
-            <div class="step-text">Установи приложение <b>Happ</b> из App Store для подключения</div>
+            <div class="step-text">Установи <b>Happ</b> из App Store для подключения к VPN</div>
           </div>
         </div>
-
-        <!-- Android -->
         <div class="guide-body" id="guide-android" style="display:none;">
           <div class="guide-step">
             <div class="step-num">1</div>
@@ -320,7 +695,7 @@ body{
           </div>
           <div class="guide-step">
             <div class="step-num">3</div>
-            <div class="step-text">Выбери <b>«Добавить на главный экран»</b> или <b>«Установить приложение»</b></div>
+            <div class="step-text">Выбери <b>«Добавить на главный экран»</b></div>
           </div>
           <div class="guide-step">
             <div class="step-num">4</div>
@@ -328,77 +703,119 @@ body{
           </div>
           <div class="guide-step">
             <div class="step-num">5</div>
-            <div class="step-text">Установи <b>v2rayNG</b> или <b>Hiddify</b> из Play Store для подключения</div>
+            <div class="step-text">Установи <b>v2rayNG</b> или <b>Hiddify</b> из Play Store</div>
           </div>
         </div>
       </div>
 
       <!-- QR -->
-      <div class="card">
+      <div class="qr-card">
         <div class="qr-row">
           <div class="qr-box"><canvas id="qr"></canvas></div>
           <div class="qr-info">
-            <div class="qr-label">Сканируй в приложении</div>
+            <div class="qr-label">Скан в приложении</div>
             <div class="qr-config" id="configPreview"></div>
-            <button class="btn-secondary" onclick="copyConfig()">⎘ Копировать конфиг</button>
+            <button class="btn-copy" onclick="copyConfig()">⎘&nbsp;Скопировать конфиг</button>
           </div>
         </div>
       </div>
 
     </div><!-- /home -->
 
-    <!-- ═══ SERVERS ═══ -->
+    <!-- ═══════════ SERVERS ═══════════ -->
     <div id="servers" class="section">
-      <div class="sec-header">Servers</div>
-      <div class="sec-sub">// выбери конфиг</div>
+      <div class="sec-header">Серверы</div>
+      <div class="sec-sub">// выбери конфигурацию</div>
 
-      <div class="card srv-card selected" id="srv0" onclick="selectServer(0)">
+      <div class="srv-card selected" id="srv0" onclick="selectServer(0)">
         <div class="flag">🇺🇸</div>
         <div class="srv-info">
-          <div class="srv-name">USA · Server #1</div>
-          <div class="srv-sub">sectum.chickenkiller.com · VLESS · REALITY · TCP</div>
+          <div class="srv-name">США · Сервер #1</div>
+          <div class="srv-sub">sectum.chickenkiller.com · TCP · 443</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <div class="srv-badge">REALITY</div>
-          <div class="ping-bar">
-            <span style="height:7px"></span><span style="height:12px"></span>
-            <span style="height:18px"></span><span style="height:18px"></span>
+        <div class="srv-right">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="ping-selected-dot"></div>
+            <div class="srv-badge">REALITY</div>
           </div>
-        </div>
-      </div>
-
-      <div class="card srv-card" id="srv1" onclick="selectServer(1)">
-        <div class="flag">🇺🇸</div>
-        <div class="srv-info">
-          <div class="srv-name">USA · Server #2</div>
-          <div class="srv-sub">sectum.chickenkiller.com · VLESS · TLS · WebSocket</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <div class="srv-badge">WS · TLS</div>
           <div class="ping-bar">
-            <span style="height:7px"></span><span style="height:12px"></span>
-            <span style="height:18px"></span><span style="height:12px"></span>
+            <span style="height:6px"></span>
+            <span style="height:11px"></span>
+            <span style="height:17px"></span>
+            <span style="height:17px"></span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ═══ SETTINGS ═══ -->
+    <!-- ═══════════ SETTINGS ═══════════ -->
     <div id="settings" class="section">
-      <div class="sec-header">Settings</div>
-      <div class="sec-sub">// конфигурация</div>
-      <div class="card">
-        <div class="set-row"><div class="set-label">Протокол</div><div class="set-val">VLESS</div></div>
-        <div class="set-row"><div class="set-label">Хост</div><div class="set-val">sectum.chickenkiller.com</div></div>
-        <div class="set-row"><div class="set-label">Порт</div><div class="set-val">443</div></div>
-        <div class="set-row"><div class="set-label">Server #1 Security</div><div class="set-val">REALITY</div></div>
-        <div class="set-row"><div class="set-label">Server #2 Transport</div><div class="set-val">WebSocket</div></div>
-        <div class="set-row"><div class="set-label">Fingerprint</div><div class="set-val">chrome</div></div>
+      <div class="sec-header">Настройки</div>
+      <div class="sec-sub">// конфигурация подключения</div>
+
+      <div class="settings-card">
+        <div class="settings-section-title">Сервер</div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Протокол</div>
+          </div>
+          <div class="set-val">VLESS</div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Хост</div>
+          </div>
+          <div class="set-val" style="font-size:9px;">sectum.chickenkiller.com</div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Порт</div>
+          </div>
+          <div class="set-val">443</div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Security</div>
+          </div>
+          <div class="set-val">REALITY</div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Transport</div>
+          </div>
+          <div class="set-val">TCP</div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Fingerprint</div>
+          </div>
+          <div class="set-val">chrome</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="set-row"><div class="set-label">Kill switch</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-        <div class="set-row"><div class="set-label">DNS leak protection</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-        <div class="set-row"><div class="set-label">Auto connect</div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+
+      <div class="settings-card">
+        <div class="settings-section-title">Защита</div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Kill Switch</div>
+            <div class="set-desc">Блокировать трафик без VPN</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">DNS Leak Protection</div>
+            <div class="set-desc">Защита DNS-запросов</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="set-row">
+          <div class="set-left">
+            <div class="set-label">Auto Connect</div>
+            <div class="set-desc">Подключаться при запуске</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
       </div>
     </div>
 
@@ -420,174 +837,371 @@ body{
 <div class="toast" id="toast"></div>
 
 <script>
+// ── CONFIG ──
+const VPN_IP = "3.14.14.85";
+
 const CONFIGS = [
   {
-    name:"🇺🇸 USA · Server #1",
-    coords:[37.09,-95.71],
-    url:"https://sectum.chickenkiller.com/pnxno60EO4/ftke35qrtw7y3wj4"
+    name: "США · Сервер #1",
+    flag: "🇺🇸",
+    tagName: "США · #1",
+    coords: [37.09, -95.71],
+    url: "https://sectum.chickenkiller.com/pnxno60EO4/ftke35qrtw7y3wj4"
   }
 ];
 
 const APP_SCHEMAS = {
   v2ray:   u => `v2rayng://install-config?url=${encodeURIComponent(u)}`,
-  happ:    u => `happ://add?url=${encodeURIComponent(u)}`,
+  happ:    u => `happ://add/${encodeURIComponent(u)}`,
   hiddify: u => `hiddify://import/${encodeURIComponent(u)}`
 };
 
 let activeConfig = 0;
-let connected    = false;
-let userCoords   = null;
-let userMarker, serverMarker, routeLine;
+let connected = false;
+let userCoords = null;
+let userMarker = null, serverMarker = null, routeLine = null;
+let currentIP = null;
 
-/* MAP */
-const map = L.map('map',{
-  zoomControl:false,attributionControl:false,
-  dragging:false,touchZoom:false,scrollWheelZoom:false,
-  doubleClickZoom:false,boxZoom:false,keyboard:false
-}).setView([37,-95],3);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18}).addTo(map);
+// ── MAP ──
+const map = L.map('map', {
+  zoomControl: false, attributionControl: false,
+  dragging: false, touchZoom: false, scrollWheelZoom: false,
+  doubleClickZoom: false, boxZoom: false, keyboard: false
+}).setView([30, 10], 2);
 
-serverMarker = L.circleMarker(CONFIGS[0].coords,{
-  radius:8,color:'#fff',fillColor:'#fff',fillOpacity:0.65,weight:1.5
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 18, subdomains: 'abcd'
 }).addTo(map);
 
-if(navigator.geolocation){
-  navigator.geolocation.getCurrentPosition(pos=>{
-    userCoords=[pos.coords.latitude,pos.coords.longitude];
-    userMarker=L.circleMarker(userCoords,{radius:6,color:'#fff',fillColor:'#fff',fillOpacity:0.85,weight:1.5}).addTo(map);
-    map.setView(userCoords,4);
-  },()=>{
-    userCoords=[55.75,37.62];
-    userMarker=L.circleMarker(userCoords,{radius:6,color:'#fff',fillColor:'#fff',fillOpacity:0.85,weight:1.5}).addTo(map);
-    map.fitBounds(L.latLngBounds([userCoords,CONFIGS[0].coords]),{padding:[28,28]});
+// Custom marker HTML
+function makeMarkerIcon(type) {
+  const isUser = type === 'user';
+  const cls = isUser ? '' : '';
+  return L.divIcon({
+    html: `<div class="marker-pulse-wrap">
+      <div class="marker-dot${cls}"></div>
+      <div class="marker-ring${cls}"></div>
+    </div>`,
+    className: '',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
   });
 }
 
-/* IP */
-fetch("https://api.ipify.org?format=json")
-  .then(r=>r.json()).then(d=>{document.getElementById("ipInfo").textContent=d.ip;})
-  .catch(()=>{document.getElementById("ipInfo").textContent="N/A";});
+// Place server marker
+serverMarker = L.marker(CONFIGS[0].coords, { icon: makeMarkerIcon('server') }).addTo(map);
 
-/* GUIDE TABS */
-function switchGuide(os){
-  document.getElementById("guide-ios").style.display     = os==="ios"     ? "block" : "none";
-  document.getElementById("guide-android").style.display = os==="android" ? "block" : "none";
-  document.getElementById("gtab-ios").classList.toggle("active",    os==="ios");
-  document.getElementById("gtab-android").classList.toggle("active", os==="android");
+// Geolocation
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userCoords = [pos.coords.latitude, pos.coords.longitude];
+      placeUserMarker();
+      map.fitBounds(L.latLngBounds([userCoords, CONFIGS[activeConfig].coords]), { padding: [32, 32] });
+    },
+    () => {
+      userCoords = [55.75, 37.62]; // Moscow fallback
+      placeUserMarker();
+      map.fitBounds(L.latLngBounds([userCoords, CONFIGS[activeConfig].coords]), { padding: [32, 32] });
+    }
+  );
 }
 
-/* auto-detect OS for guide */
-(function(){
+function placeUserMarker() {
+  if (userMarker) map.removeLayer(userMarker);
+  userMarker = L.marker(userCoords, { icon: makeMarkerIcon('user') }).addTo(map);
+}
+
+// ── IP CHECK ──
+function checkIP() {
+  fetch("https://api.ipify.org?format=json")
+    .then(r => r.json())
+    .then(d => {
+      currentIP = d.ip;
+      document.getElementById("ipInfo").textContent = d.ip;
+      if (d.ip === VPN_IP) {
+        // IP matches VPN server — set connected state
+        setConnectedState(true);
+      } else {
+        setDisconnectedState(false);
+      }
+    })
+    .catch(() => {
+      document.getElementById("ipInfo").textContent = "N/A";
+    });
+}
+
+checkIP();
+
+// Re-check every 10s when in "pending" state
+let ipPollInterval = null;
+function startIPPolling() {
+  stopIPPolling();
+  ipPollInterval = setInterval(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(r => r.json())
+      .then(d => {
+        currentIP = d.ip;
+        document.getElementById("ipInfo").textContent = d.ip;
+        if (d.ip === VPN_IP) {
+          stopIPPolling();
+          setConnectedState(true);
+        }
+      })
+      .catch(() => {});
+  }, 6000);
+}
+function stopIPPolling() {
+  if (ipPollInterval) { clearInterval(ipPollInterval); ipPollInterval = null; }
+}
+
+// ── CONNECTION STATE ──
+function setConnectedState(showToastMsg) {
+  connected = true;
+  stopIPPolling();
+
+  // Orb
+  const orb = document.getElementById("orbCenter");
+  orb.textContent = "🔒";
+  orb.classList.remove("danger");
+  orb.classList.add("connected");
+  document.getElementById("orbPulse").classList.add("active");
+
+  // Status text
+  const st = document.getElementById("statusText");
+  st.textContent = "Защищено";
+  st.className = "hero-status connected";
+
+  // IP indicator
+  document.getElementById("ipIndicator").classList.add("on");
+
+  // Map chip
+  document.getElementById("chipDot").classList.add("on");
+  document.getElementById("chipText").textContent = "VPN ACTIVE";
+
+  // Pulse dot
+  document.getElementById("pulseDot").classList.add("on");
+  document.getElementById("statusLabel").textContent = "Connected · " + CONFIGS[activeConfig].flag + " " + CONFIGS[activeConfig].name;
+
+  // Button
+  const btn = document.getElementById("connectBtn");
+  btn.disabled = false;
+  btn.textContent = "Отключиться";
+  btn.classList.add("disconnect");
+
+  // Info card
+  document.getElementById("connInfoCard").classList.add("visible");
+  document.getElementById("connInfoSub").textContent = CONFIGS[activeConfig].name + " · " + (currentIP || VPN_IP);
+
+  // Route line on map
+  drawRoute();
+
+  if (showToastMsg) showToast("✓ Соединение активно", "success");
+}
+
+function setDisconnectedState(notify) {
+  connected = false;
+
+  // Orb
+  const orb = document.getElementById("orbCenter");
+  orb.textContent = "🔓";
+  orb.classList.remove("connected");
+  orb.classList.add("danger");
+  document.getElementById("orbPulse").classList.remove("active");
+
+  // Status text
+  const st = document.getElementById("statusText");
+  st.textContent = "Не защищено";
+  st.className = "hero-status danger";
+
+  // IP indicator
+  document.getElementById("ipIndicator").classList.remove("on");
+
+  // Map chip
+  document.getElementById("chipDot").classList.remove("on");
+  document.getElementById("chipText").textContent = "NO ROUTE";
+
+  // Pulse dot
+  document.getElementById("pulseDot").classList.remove("on");
+  document.getElementById("statusLabel").textContent = "Не подключено";
+
+  // Button
+  const btn = document.getElementById("connectBtn");
+  btn.disabled = false;
+  btn.textContent = "Подключиться";
+  btn.classList.remove("disconnect");
+
+  // Info card
+  document.getElementById("connInfoCard").classList.remove("visible");
+
+  // Route
+  clearRoute();
+
+  if (notify) showToast("Отключено · откройте приложение");
+}
+
+function drawRoute() {
+  clearRoute();
+  if (!userCoords) return;
+  routeLine = L.polyline([userCoords, CONFIGS[activeConfig].coords], {
+    color: "#00e5a0",
+    weight: 1.5,
+    opacity: 0.35,
+    dashArray: "6 5"
+  }).addTo(map);
+  map.flyToBounds(
+    L.latLngBounds([userCoords, CONFIGS[activeConfig].coords]),
+    { padding: [36, 36], duration: 1.2, easeLinearity: 0.35 }
+  );
+}
+
+function clearRoute() {
+  if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+  if (userCoords) map.fitBounds(L.latLngBounds([userCoords, CONFIGS[activeConfig].coords]), { padding: [32, 32] });
+}
+
+// ── CONNECT HANDLER ──
+function handleConnect() {
+  if (connected) {
+    handleDisconnect();
+    return;
+  }
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(!isIOS) switchGuide("android");
-})();
-
-/* OPEN IN APP */
-function openInApp(appKey){
-  const url  = CONFIGS[activeConfig].url;
-  const link = APP_SCHEMAS[appKey](url);
-  const name = {v2ray:"v2rayNG",happ:"Happ",hiddify:"Hiddify"}[appKey];
-  showToast("Открываю " + name + "...");
-  setPending();
-  const a=document.createElement("a");
-  a.href=link;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(setConnected, 3000);
-}
-
-function handleConnect(){
-  if(connected){ handleDisconnect(); return; }
-  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
   openInApp(isIOS ? "happ" : "v2ray");
 }
 
-function setPending(){
-  const btn=document.getElementById("connectBtn");
-  btn.disabled=true; btn.textContent="Подключаюсь...";
+function openInApp(appKey) {
+  const url = CONFIGS[activeConfig].url;
+  const schema = APP_SCHEMAS[appKey](url);
+  const names = { v2ray: "v2rayNG", happ: "Happ", hiddify: "Hiddify" };
+
+  showToast("Открываю " + names[appKey] + "…");
+
+  // Set button to loading state
+  const btn = document.getElementById("connectBtn");
+  btn.disabled = true;
+  btn.textContent = "Ожидание подключения…";
+  btn.classList.remove("disconnect");
+
+  // Open deep link
+  const a = document.createElement("a");
+  a.href = schema;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Start polling for IP change
+  startIPPolling();
+
+  // Timeout: re-enable button if no connection after 30s
+  setTimeout(() => {
+    if (!connected) {
+      btn.disabled = false;
+      btn.textContent = "Подключиться";
+      stopIPPolling();
+      showToast("Не удалось подключиться автоматически");
+    }
+  }, 30000);
 }
 
-function setConnected(){
-  connected=true;
-  const btn=document.getElementById("connectBtn");
-  btn.disabled=false; btn.textContent="Отключиться";
-  btn.classList.add("disconnect");
-  document.getElementById("pulseDot").classList.add("on");
-  document.getElementById("ipDot").classList.add("on");
-  document.getElementById("statusLabel").textContent="Connected · "+CONFIGS[activeConfig].name;
-  const li=document.getElementById("lockInner");
-  li.textContent="🔒"; li.classList.remove("danger"); li.classList.add("protected");
-  document.getElementById("statusText").textContent="Вы защищены";
-  if(routeLine) map.removeLayer(routeLine);
-  if(userCoords){
-    routeLine=L.polyline([userCoords,CONFIGS[activeConfig].coords],{
-      color:"#fff",weight:1.5,opacity:0.28,dashArray:"5 5"
-    }).addTo(map);
-    map.flyToBounds(L.latLngBounds([userCoords,CONFIGS[activeConfig].coords]),
-      {padding:[28,28],duration:1.0,easeLinearity:0.4});
-  }
+function handleDisconnect() {
+  setDisconnectedState(true);
+  // Re-fetch IP to confirm
+  setTimeout(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(r => r.json())
+      .then(d => {
+        currentIP = d.ip;
+        document.getElementById("ipInfo").textContent = d.ip;
+        if (d.ip === VPN_IP) {
+          // Still connected — VPN app not closed
+          showToast("Отключите VPN в приложении");
+          setConnectedState(false);
+        }
+      })
+      .catch(() => {});
+  }, 2000);
 }
 
-function handleDisconnect(){
-  connected=false;
-  const btn=document.getElementById("connectBtn");
-  btn.textContent="Подключиться"; btn.classList.remove("disconnect");
-  document.getElementById("pulseDot").classList.remove("on");
-  document.getElementById("ipDot").classList.remove("on");
-  document.getElementById("statusLabel").textContent="Disconnected";
-  const li=document.getElementById("lockInner");
-  li.textContent="🔓"; li.classList.remove("protected"); li.classList.add("danger");
-  document.getElementById("statusText").textContent="Вы не защищены";
-  if(routeLine){map.removeLayer(routeLine);routeLine=null;}
-  if(userCoords) map.setView(userCoords,4);
-  showToast("Откройте приложение и нажмите Disconnect");
-}
+// ── SERVER SELECT ──
+function selectServer(idx) {
+  activeConfig = idx;
+  document.querySelectorAll(".srv-card").forEach((c, i) => {
+    c.classList.toggle("selected", i === idx);
+  });
 
-/* SERVER SELECT */
-function selectServer(idx){
-  activeConfig=idx;
-  document.querySelectorAll(".srv-card").forEach((c,i)=>c.classList.toggle("selected",i===idx));
+  // Update tag in connect card
+  document.getElementById("srvTagFlag").textContent = CONFIGS[idx].flag;
+  document.getElementById("srvTagName").textContent = CONFIGS[idx].tagName;
+
   updateQR();
-  if(serverMarker) map.removeLayer(serverMarker);
-  serverMarker=L.circleMarker(CONFIGS[idx].coords,{
-    radius:8,color:'#fff',fillColor:'#fff',fillOpacity:connected?0.9:0.65,weight:1.5
-  }).addTo(map);
+
+  if (serverMarker) map.removeLayer(serverMarker);
+  serverMarker = L.marker(CONFIGS[idx].coords, { icon: makeMarkerIcon('server') }).addTo(map);
+  document.getElementById("mapLabelSrv").textContent = CONFIGS[idx].name;
+
   openTab("home");
 }
 
-/* QR */
-function updateQR(){
-  const url=CONFIGS[activeConfig].url;
-  document.getElementById("configPreview").textContent=url;
-  const canvas=document.getElementById("qr");
-  QRCode.toCanvas(canvas,url,{width:104,color:{dark:"#000",light:"#fff"}},()=>{});
+// ── QR ──
+function updateQR() {
+  const url = CONFIGS[activeConfig].url;
+  document.getElementById("configPreview").textContent = url;
+  const canvas = document.getElementById("qr");
+  QRCode.toCanvas(canvas, url, {
+    width: 104,
+    margin: 1,
+    color: { dark: "#000000", light: "#ffffff" }
+  }, () => {});
 }
 updateQR();
 
-/* COPY */
-function copyConfig(){
-  const url=CONFIGS[activeConfig].url;
-  if(navigator.clipboard){navigator.clipboard.writeText(url).catch(()=>{});}
-  else{const t=document.createElement("textarea");t.value=url;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);}
-  showToast("Конфиг скопирован ✓");
+// ── COPY ──
+function copyConfig() {
+  const url = CONFIGS[activeConfig].url;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).catch(() => fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+  showToast("✓ Конфиг скопирован", "success");
+}
+function fallbackCopy(text) {
+  const t = document.createElement("textarea");
+  t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+  document.body.appendChild(t); t.focus(); t.select();
+  document.execCommand("copy"); document.body.removeChild(t);
 }
 
-/* TOAST */
+// ── GUIDE ──
+function switchGuide(os) {
+  document.getElementById("guide-ios").style.display    = os === "ios"     ? "block" : "none";
+  document.getElementById("guide-android").style.display = os === "android" ? "block" : "none";
+  document.getElementById("gtab-ios").classList.toggle("active", os === "ios");
+  document.getElementById("gtab-android").classList.toggle("active", os === "android");
+}
+// Auto-detect OS
+if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) switchGuide("android");
+
+// ── TOAST ──
 let toastTimer;
-function showToast(msg){
-  const t=document.getElementById("toast");
-  t.textContent=msg; t.classList.add("show");
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (type ? " " + type : "");
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
 }
 
-/* TABS */
-function openTab(id){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+// ── TABS ──
+function openTab(id) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  const el=document.getElementById("tab-"+id);
-  if(el) el.classList.add("active");
-  document.getElementById("contentWrap").scrollTop=0;
-  if(id==="home") setTimeout(()=>map.invalidateSize(),80);
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  const el = document.getElementById("tab-" + id);
+  if (el) el.classList.add("active");
+  document.getElementById("contentWrap").scrollTop = 0;
+  if (id === "home") setTimeout(() => map.invalidateSize(), 80);
 }
 </script>
 </body>
