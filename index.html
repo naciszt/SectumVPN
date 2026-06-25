@@ -1,17 +1,16 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
+<html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>SectumVPN</title>
 
-<meta name="description" content="SectumVPN - Стабильный ВПН сервис! Анонимный впн не сливающий логов. Цифровой защитник от злоумышников!">
-<meta name="keywords" content="впн,сектум,сектумвпн,защита,деф,сервер,тор,муллвад,норд,аноним,анонимус,анонимность">
+<meta name="description" content="SectumVPN - Стабильный VPN сервис! Анонимный VPN не сливающий логов. Цифровой защитник от злоумышников!">
+<meta name="keywords" content="впн,сектум,сектумвпн,защита,деф,сервер,тор,муллвад,норд,аноним,анонимус,анонимность,vpn,mullvad,mullvadvpn,nordvpn,nord,anonymous">
 <meta name="author" content="sectumsempra cult">
 
 <meta property="og:title" content="SectumVPN">
-<meta property="og:description" content="Стабильный ВПН сервис! Анонимный впн не сливающий логов. Цифровой защитник от злоумышников!">
+<meta property="og:description" content="Стабильный VPN сервис! Анонимный VPN не сливающий логов. Цифровой защитник от злоумышников!">
 <meta property="og:image" content="banner.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sectum.space/">
@@ -20,37 +19,928 @@
 <meta name="twitter:title" content="SectumVPN">
 <meta name="twitter:description" content="SectumVPN - Стабильный ВПН сервис! Анонимный впн не сливающий логов. Цифровой защитник от злоумышников!">
 <meta name="twitter:image" content="banner.png">
-<link rel="stylesheet" href="style.css">
-/* developed by lozes and whoami */
-/* вижу ты любопытный в код полез)
-ну удачи тебе там что то найти,
-только что ты там ищешь :D */
+
+<link rel="icon" type="image/png" href="https://i.ibb.co/BVJfJF4g/IMG-8299.jpg">
+<!-- сайт by @phobiasleep -->
+<!--  SECTUMSEMPRA CULT   -->
+<style>
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+
+body {
+    background: #030303;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+    display: none;
+}
+
+#starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.page {
+    position: relative;
+    z-index: 10;
+}
+
+header {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(90%, 920px);
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    z-index: 1000;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 32px;
+    width: auto;
+    display: block;
+}
+
+.header-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: all .25s ease;
+    text-decoration: none;
+}
+
+.header-icon:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.08);
+    border-color: rgba(255,255,255,0.25);
+}
+
+.header-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 26px;
+    list-style: none;
+}
+
+.nav-links a {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: #fff;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 22px;
+    background: #fff;
+    color: #000;
+    font-weight: 700;
+    font-size: 0.84rem;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 28px rgba(255,255,255,0.22);
+}
+
+.btn-outline {
+    background: transparent;
+    color: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.22);
+    font-weight: 500;
+}
+
+.btn-outline:hover {
+    border-color: rgba(255,255,255,0.55);
+    color: #fff;
+    box-shadow: none;
+}
+
+.hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 110px 24px 60px;
+}
+
+.hero-eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 22px;
+}
+
+.hero h1 {
+    font-size: clamp(3.2rem, 11vw, 7rem);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -3px;
+    line-height: 1;
+}
+
+.hero h3 {
+    margin-top: 16px;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.5px;
+}
+
+.hero-btns {
+    margin-top: 34px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: clamp(28px, 6vw, 72px);
+    padding: 38px 24px;
+    flex-wrap: wrap;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-num {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: #fff;
+}
+
+.stat-lbl {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.38);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+section {
+    padding: clamp(70px, 10vw, 120px) clamp(20px, 5vw, 40px);
+}
+
+.section-label {
+    font-family: 'Courier New', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.28);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    margin-bottom: clamp(38px, 6vw, 58px);
+    letter-spacing: -1px;
+    line-height: 1.15;
+}
+
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 1px;
+    max-width: 960px;
+    margin: 0 auto;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 22px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+}
+
+.why-card {
+    padding: clamp(26px, 4vw, 38px) clamp(22px, 3vw, 32px);
+    background: #0c0c0c;
+    transition: background 0.25s;
+}
+
+.why-card:hover {
+    background: #121212;
+}
+
+.why-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 0.66rem;
+    color: rgba(255,255,255,0.22);
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+}
+
+.why-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 9px;
+}
+
+.why-card p {
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.52);
+    line-height: 1.75;
+}
+
+.steps-wrap {
+    max-width: 660px;
+    margin: 0 auto;
+}
+
+.step {
+    display: flex;
+    gap: 22px;
+    padding: 30px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    align-items: flex-start;
+}
+
+.step:last-child {
+    border-bottom: none;
+}
+
+.step-num {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.2);
+    padding-top: 3px;
+    min-width: 28px;
+    letter-spacing: 1px;
+}
+
+.step h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.step p {
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.52);
+    line-height: 1.75;
+}
+
+.plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 14px;
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.plan {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 22px;
+    padding: clamp(26px, 4vw, 36px) clamp(22px, 3vw, 30px);
+    background: #0c0c0c;
+    transition: border-color 0.25s, transform 0.25s;
+    position: relative;
+}
+
+.plan:hover {
+    border-color: rgba(255,255,255,0.28);
+    transform: translateY(-6px);
+}
+
+.plan.featured {
+    border-color: rgba(255,255,255,0.28);
+    background: #111;
+}
+
+.plan.featured::before {
+    content: 'ПОПУЛЯРНЫЙ';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #000;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 0 0 10px 10px;
+    white-space: nowrap;
+}
+
+.plan-name {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.38);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.plan-price {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+}
+
+.plan-price sup {
+    font-size: 1rem;
+    vertical-align: super;
+    margin-right: 1px;
+    opacity: 0.5;
+    font-weight: 500;
+}
+
+.plan-price sub {
+    font-size: 0.72rem;
+    opacity: 0.4;
+    font-weight: 400;
+}
+
+hr.plan-line {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin: 20px 0;
+}
+
+.plan-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 26px;
+}
+
+.plan-features li {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+}
+
+.plan-features li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    opacity: 0.3;
+}
+
+.faq-list {
+    max-width: 660px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.faq-item {
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #0c0c0c;
+}
+
+.faq-q {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    padding: 20px 22px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    user-select: none;
+    transition: opacity 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.faq-q:hover {
+    opacity: 0.7;
+}
+
+.faq-arrow {
+    color: rgba(255,255,255,0.3);
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.faq-item.open .faq-arrow {
+    transform: rotate(90deg);
+}
+
+.faq-a {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease;
+}
+
+.faq-item.open .faq-a {
+    grid-template-rows: 1fr;
+}
+
+.faq-a-inner {
+    overflow: hidden;
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.8;
+    padding: 0 22px;
+}
+
+.faq-item.open .faq-a-inner {
+    padding-bottom: 20px;
+}
+
+.cta {
+    text-align: center;
+}
+
+.cta h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+    line-height: 1.2;
+}
+
+.cta p {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.48);
+    max-width: 440px;
+    margin: 0 auto 30px;
+    line-height: 1.8;
+}
+
+footer {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: clamp(36px, 5vw, 52px) clamp(20px, 5vw, 48px) clamp(22px, 4vw, 34px);
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 32px;
+    margin-bottom: 38px;
+}
+
+.footer-brand {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.footer-brand small {
+    display: block;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.26);
+    font-weight: 400;
+    margin-top: 5px;
+}
+
+.footer-cols {
+    display: flex;
+    gap: clamp(24px, 5vw, 52px);
+    flex-wrap: wrap;
+}
+
+.footer-col h4 {
+    font-size: 0.66rem;
+    color: rgba(255,255,255,0.26);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.footer-col a {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.45);
+    text-decoration: none;
+    margin-bottom: 9px;
+    transition: color 0.2s;
+}
+
+.footer-col a:hover {
+    color: #fff;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.25);
+}
+
+.footer-mono {
+    font-family: 'Courier New', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 2px;
+}
+
+@media (max-width: 680px) {
+    .nav-links {
+        display: none;
+    }
+    header {
+        padding: 0 16px;
+    }
+    .hero h1 {
+        letter-spacing: -1.5px;
+    }
+    .footer-top {
+        flex-direction: column;
+        gap: 26px;
+    }
+    .footer-bottom {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 400px) {
+    .hero-btns {
+        flex-direction: column;
+        align-items: center;
+    }
+    .plans {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 </head>
 <body>
 
-<div class="stars"></div>
-<div class="twinkling">
-    <p class="copyright">
-        © 2026 SectumVPN. Все права защищены.  
-    </p>
-    <h1>SectumVPN</h1>
-    <h3>Один из лучших и самых анонимных VPN сервисов!</h3>
+<canvas id="starfield"></canvas>
 
-    <button class="gashishknopka">
-        <a href="https://muhtar3000-production.up.railway.app/">Пробная подписка!</a>
-    </button>
-</div>
-<br><hr>
-<p class="copyright">
-        цени сваю маму братишка жиесть хэ  
-    </p>
+<div class="page">
+
 <header>
-    <div class="logo"><img src="logo.png" width="40px"></div>
+    <a class="logo" href="/">
+    <img src="logo.png" alt="SectumVPN">
+</a>
 
-    <nav>
-     <a class="svg-btn" href="#"><img src="home.svg" alt="home"></a>
-    </nav>
+<a class="header-icon" href="https://sectum.xyz/connect">
+  <svg viewBox="0 0 24 24" fill="none">
+
+        <path d="M12 3L20 7V12C20 17 16.5 21.5 12 23C7.5 21.5 4 17 4 12V7L12 3Z"
+
+              stroke="currentColor"
+
+              stroke-width="1.8"/>
+
+        <path d="M9 12L11 14L15 10"
+
+              stroke="currentColor"
+
+              stroke-width="1.8"
+
+              stroke-linecap="round"
+
+              stroke-linejoin="round"/>
+
+    </svg>
+    
+</a>
 </header>
 
+<section class="hero">
+    <p class="hero-eyebrow">// анонимность · свобода · защита</p>
+    <h1>sectumvpn</h1>
+    <h3>are you a 1 or a 0?</h3>
+    <div class="hero-btns">
+        <a class="btn" href="https://sectum.xyz/connect">подключиться</a>
+        <a class="btn btn-outline" href="#why">узнать больше</a>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-num">0</div>
+        <div class="stat-lbl">логов хранится</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">12+</div>
+        <div class="stat-lbl">серверов</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">256</div>
+        <div class="stat-lbl">бит шифрование</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-lbl">трафик</div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<section id="why">
+    <p class="section-label">// почему именно мы</p>
+    <h2 class="section-title">почему именно мы?</h2>
+    <div class="why-grid">
+        <div class="why-card">
+            <div class="why-tag">[00]</div>
+            <h3>ноль логов</h3>
+            <p>мы не храним, не анализируем и не передаём твои данные. абсолютно никому — ни властям, ни корпорациям.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-tag">[01]</div>
+            <h3>незагруженные серверы</h3>
+            <p>мы следим за нагрузкой и масштабируемся вовремя. стабильная скорость без тормозов в любое время суток.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-tag">[02]</div>
+            <h3>удобный интерфейс</h3>
+            <p>понятная настройка без технических знаний. подключиться можно за пару минут на любом устройстве.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-tag">[03]</div>
+            <h3>сильное шифрование</h3>
+            <p>AES-256 и современные протоколы. твой трафик — зашифрованный поток, который никто не расшифрует.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-tag">[04]</div>
+            <h3>kill switch</h3>
+            <p>если соединение обрывается — трафик блокируется автоматически. твой настоящий IP не засветится никогда.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-tag">[05]</div>
+            <h3>все устройства</h3>
+            <p>Windows, macOS, Linux, Android, iOS. одна подписка покрывает все твои устройства одновременно.</p>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="howto">
+    <p class="section-label">// подключение</p>
+    <h2 class="section-title">три шага до анонимности</h2>
+    <div class="steps-wrap">
+        <div class="step">
+            <div class="step-num">01</div>
+            <div>
+                <h3>зарегистрируйся</h3>
+                <p>перейди на sectum.xyz/connect и создай аккаунт. нужен только никнейм — никаких личных данных.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">02</div>
+            <div>
+                <h3>скачай конфиг или приложение</h3>
+                <p>после регистрации доступен готовый конфиг для WireGuard или инструкция для других протоколов. импорт занимает секунду.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">03</div>
+            <div>
+                <h3>подключись и будь невидим</h3>
+                <p>нажми «подключить». всё. твой трафик зашифрован, IP скрыт, данные в безопасности.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="pricing">
+    <p class="section-label">// тарифы</p>
+    <h2 class="section-title">честная цена</h2>
+    <div class="plans">
+        <div class="plan">
+            <div class="plan-name">пробный</div>
+            <div class="plan-price"><sup>₽</sup>0<sub>/мес</sub></div>
+            <hr class="plan-line">
+            <ul class="plan-features">
+                <li>7 дней бесплатно</li>
+                <li>1 устройство</li>
+                <li>базовые серверы</li>
+                <li>без логов</li>
+            </ul>
+            <a class="btn btn-outline" href="https://sectum.xyz/connect" style="text-align:center;display:block;">попробовать</a>
+        </div>
+        <div class="plan featured">
+            <div class="plan-name">стандарт</div>
+            <div class="plan-price"><sup>₽</sup>149<sub>/мес</sub></div>
+            <hr class="plan-line">
+            <ul class="plan-features">
+                <li>все серверы</li>
+                <li>до 3 устройств</li>
+                <li>безлимитный трафик</li>
+                <li>kill switch</li>
+                <li>приоритетная поддержка</li>
+            </ul>
+            <a class="btn" href="https://sectum.xyz/connect" style="text-align:center;display:block;">подключиться</a>
+        </div>
+        <div class="plan">
+            <div class="plan-name">максимум</div>
+            <div class="plan-price"><sup>₽</sup>299<sub>/мес</sub></div>
+            <hr class="plan-line">
+            <ul class="plan-features">
+                <li>все серверы + выделенный IP</li>
+                <li>до 10 устройств</li>
+                <li>безлимитный трафик</li>
+                <li>kill switch + DNS-защита</li>
+                <li>личный менеджер</li>
+            </ul>
+            <a class="btn btn-outline" href="https://sectum.xyz/connect" style="text-align:center;display:block;">выбрать</a>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="faq">
+    <p class="section-label">// faq</p>
+    <h2 class="section-title">вопросы и ответы</h2>
+    <div class="faq-list">
+        <div class="faq-item">
+            <div class="faq-q">вы действительно не храните логи?<span class="faq-arrow">›</span></div>
+            <div class="faq-a"><div class="faq-a-inner">да. мы не записываем IP-адреса, время подключения, трафик или историю сайтов. технически — нам нечего передавать даже по запросу.</div></div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">какие протоколы поддерживаются?<span class="faq-arrow">›</span></div>
+            <div class="faq-a"><div class="faq-a-inner">WireGuard, OpenVPN и собственный протокол на базе shadowsocks для обхода DPI.</div></div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">где находятся ваши серверы?<span class="faq-arrow">›</span></div>
+            <div class="faq-a"><div class="faq-a-inner">серверы расположены в Нидерландах, Германии, Финляндии, США и других странах с сильной защитой приватности.</div></div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">можно использовать на нескольких устройствах?<span class="faq-arrow">›</span></div>
+            <div class="faq-a"><div class="faq-a-inner">да. в зависимости от тарифа — от 1 до 10 устройств одновременно на одном аккаунте.</div></div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q">что если соединение оборвётся?<span class="faq-arrow">›</span></div>
+            <div class="faq-a"><div class="faq-a-inner">активируется kill switch — весь трафик блокируется до восстановления защищённого канала. твой реальный IP не засветится.</div></div>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="cta">
+    <p class="section-label">// начни сейчас</p>
+    <h2>интернет без слежки.</h2>
+    <p>в мире где каждый клик продаётся рекламодателям — sectumvpn даёт тебе право на тишину.</p>
+    <a class="btn" href="https://sectum.xyz/connect">подключиться бесплатно</a>
+</section>
+
+<footer>
+    <div class="footer-top">
+        <div class="footer-cols">
+            <div class="footer-col">
+                <h4>продукт</h4>
+                <a href="#why">почему мы</a>
+                <a href="#howto">как подключиться</a>
+                <a href="#pricing">тарифы</a>
+            </div>
+            <div class="footer-col">
+                <h4>правовое</h4>
+                <a href="https://telegra.ph/Politika-konfidencialnosti-06-21-31">политика конфиденциальности</a>
+                <a href="https://telegra.ph/Polzovatelskoe-soglashenie-04-01-19">пользовательское соглашение</a>
+            </div>
+            <div class="footer-col">
+                <h4>контакты</h4>
+                <a href="#">telegram</a>
+                <a href="#">поддержка</a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span>© sectumvpn 2026</span>
+        <span class="footer-mono">// privacy is not a crime</span>
+    </div>
+</footer>
+
+</div>
+
+<script>
+(function () {
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+
+    let W, H, stars = [];
+    const COUNT = 90;
+
+    function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+
+    function mkStar() {
+        return {
+            x:     Math.random() * W,
+            y:     Math.random() * H,
+            r:     Math.random() * 1.3 + 0.25,
+            alpha: Math.random(),
+            da:    (Math.random() * 0.005 + 0.001) * (Math.random() < 0.5 ? 1 : -1),
+            speed: Math.random() * 0.05 + 0.008,
+        };
+    }
+
+    function init() {
+        resize();
+        stars = Array.from({ length: COUNT }, mkStar);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        for (const s of stars) {
+            s.alpha += s.da;
+            if (s.alpha > 1)  { s.alpha = 1;  s.da *= -1; }
+            if (s.alpha < 0)  { s.alpha = 0;  s.da *= -1; }
+            s.y -= s.speed;
+            if (s.y < 0) { s.y = H; s.x = Math.random() * W; }
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${s.alpha.toFixed(3)})`;
+            ctx.fill();
+        }
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+    requestAnimationFrame(draw);
+})();
+
+document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+        const item = q.parentElement;
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+    });
+});
+</script>
 </body>
-</html> 
+</html>
