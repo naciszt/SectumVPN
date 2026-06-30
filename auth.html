@@ -619,36 +619,88 @@
       label.style.color = score > 0 ? colors[score - 1] : 'var(--muted)';
     }
 
-    function doLogin() {
-      const user = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value;
-      if (!user || !pass) {
-        showMsg('login-msg', '// введи никнейм и пароль', 'err');
+    async function doLogin() {
+    const user = document.getElementById("login-user").value.trim();
+    const pass = document.getElementById("login-pass").value;
+
+    if (!user || !pass) {
+        showMsg("login-msg", "// введи никнейм и пароль", "err");
         return;
-      }
-      showMsg('login-msg', '// подключаемся к системе...', 'ok');
-      setTimeout(() => {
-        showMsg('login-msg', '// добро пожаловать, ' + user + ' — соединение защищено', 'ok');
-      }, 1200);
     }
 
-    function doRegister() {
-      const nick  = document.getElementById('reg-nick').value.trim();
-      const pass  = document.getElementById('reg-pass').value;
-      const pass2 = document.getElementById('reg-pass2').value;
-      const agree = document.getElementById('agree').checked;
+    showMsg("login-msg", "// подключаемся...", "ok");
 
-      if (!nick) { showMsg('reg-msg', '// укажи никнейм', 'err'); return; }
-      if (nick.length < 3) { showMsg('reg-msg', '// никнейм слишком короткий (мин. 3 символа)', 'err'); return; }
-      if (pass.length < 8) { showMsg('reg-msg', '// пароль должен быть не менее 8 символов', 'err'); return; }
-      if (pass !== pass2)  { showMsg('reg-msg', '// пароли не совпадают', 'err'); return; }
-      if (!agree)          { showMsg('reg-msg', '// прими условия использования', 'err'); return; }
+    try {
+        const res = await fetch("https://api.sectum.xyz/api/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                login: user,
+                password: pass
+            })
+        });
 
-      showMsg('reg-msg', '// создаём аккаунт...', 'ok');
-      setTimeout(() => {
-        showMsg('reg-msg', '// аккаунт создан — добро пожаловать, @' + nick, 'ok');
-      }, 1200);
+        const data = await res.json();
+
+        if (!res.ok) {
+            showMsg("login-msg", data.error || "// ошибка входа", "err");
+            return;
+        }
+
+        localStorage.setItem("token", data.token);
+
+        showMsg("login-msg", "// вход выполнен", "ok");
+
+        setTimeout(() => {
+            location.href = "/dashboard";
+        }, 700);
+
+    } catch (err) {
+        console.error(err);
+        showMsg("login-msg", "// сервер недоступен", "err");
     }
+}
+
+    async function doRegister() {
+    const nick = document.getElementById("reg-nick").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const pass = document.getElementById("reg-pass").value;
+    const pass2 = document.getElementById("reg-pass2").value;
+
+    if (pass !== pass2) {
+        showMsg("reg-msg", "// пароли не совпадают", "err");
+        return;
+    }
+
+    try {
+        const res = await fetch("https://api.sectum.xyz/api/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: nick,
+                email,
+                password: pass
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            showMsg("reg-msg", data.error || "// ошибка регистрации", "err");
+            return;
+        }
+
+        showMsg("reg-msg", "// аккаунт успешно создан", "ok");
+
+    } catch (err) {
+        console.error(err);
+        showMsg("reg-msg", "// сервер недоступен", "err");
+    }
+}
   </script>
 </body>
 </html>
